@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousel Maker — Jonathan Pay × HEA</title>
+<link rel="stylesheet" href="templates.css">
+<link rel="stylesheet" href="app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────────
+     SIDEBAR
+     ───────────────────────────────────────────────────────── -->
+<aside id="sidebar">
+
+  <div class="sidebar-section">
+    <h3>Template Family</h3>
+    <div id="family-picker" class="family-grid"></div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Layout</h3>
+    <div id="layout-picker" class="layout-grid"></div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Colour Theme</h3>
+    <div id="theme-swatches" class="theme-swatches"></div>
+  </div>
+
+  <div class="sidebar-section" id="icon-section" style="display:none">
+    <h3>Icon <span style="color:var(--ui-faint);font-weight:400;text-transform:none;letter-spacing:0">(used on Tip / Quote / Cover)</span></h3>
+    <div id="icon-grid" class="icon-grid"></div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Content</h3>
+    <div id="fields"></div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Common</h3>
+    <div class="field">
+      <label>Handle / Username</label>
+      <input type="text" id="fld-handle" value="@jonathanpay">
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>Page</label>
+        <input type="text" id="fld-pg" value="01">
+      </div>
+      <div class="field">
+        <label>Total</label>
+        <input type="text" id="fld-pgtot" value="05">
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ─────────────────────────────────────────────────────────
+     MAIN
+     ───────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="toolbar">
+    <div class="toolbar-section">
+      <span class="logo">Carousel Maker</span>
+      <div class="format-toggle">
+        <button class="active" data-fmt="square">Square</button>
+        <button data-fmt="portrait">Portrait</button>
+      </div>
+    </div>
+
+    <div class="toolbar-section">
+      <span id="slide-info">Slide 1 of 1</span>
+      <button class="btn btn-ghost" id="btn-browse">⊞ Browse templates</button>
+      <button class="btn btn-ghost" id="btn-tweaks">⚙ Tweaks</button>
+      <button class="btn btn-ghost" id="btn-duplicate">⎘ Duplicate</button>
+      <button class="btn btn-ghost" id="btn-export">↓ PNG</button>
+      <button class="btn btn-primary" id="btn-export-all">↓ Export all</button>
+    </div>
+  </div>
+
+  <div id="preview-area">
+    <div id="slide-canvas-wrap"></div>
+  </div>
+
+  <div id="tray"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     TWEAKS PANEL (floating)
+     ───────────────────────────────────────────────────────── -->
+<div id="tweaks">
+  <h2>Tweaks <button id="close-tweaks">×</button></h2>
+  <div id="tweaks-body"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     SHOWCASE MODAL (browse all templates)
+     ───────────────────────────────────────────────────────── -->
+<div id="showcase">
+  <div class="header">
+    <div>
+      <h2>Template Library</h2>
+      <div class="sub">4 families × 10 layouts — click any template to insert as a new slide</div>
+    </div>
+    <button class="btn btn-ghost" id="close-showcase">Close ×</button>
+  </div>
+  <div class="body" id="showcase-body"></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="templates.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

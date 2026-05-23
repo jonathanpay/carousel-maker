@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousel Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,600;1,700;1,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ui-bg: #1a1a1a;
+    --ui-surface: #252525;
+    --ui-border: #333;
+    --ui-text: #e0e0e0;
+    --ui-muted: #888;
+    --ui-accent: #9E41BF;
+    --sidebar-w: 320px;
+  }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--ui-surface);
+    border-right: 1px solid var(--ui-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--ui-border);
+  }
+
+  .sidebar-section h3 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--ui-muted);
+    margin-bottom: 12px;
+  }
+
+  /* Brand switcher */
+  .brand-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .brand-tab {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--ui-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ui-muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .brand-tab.active[data-brand="jp"] {
+    border-color: #dfb81f;
+    color: #dfb81f;
+    background: rgba(223,184,31,0.08);
+  }
+
+  .brand-tab.active[data-brand="hea"] {
+    border-color: #9E41BF;
+    color: #9E41BF;
+    background: rgba(158,65,191,0.1);
+  }
+
+  /* Layout picker */
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .layout-btn {
+    aspect-ratio: 1;
+    border: 2px solid var(--ui-border);
+    border-radius: 6px;
+    background: var(--ui-bg);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 9px;
+    color: var(--ui-muted);
+    transition: all 0.15s;
+    padding: 6px;
+  }
+
+  .layout-btn:hover { border-color: #555; color: var(--ui-text); }
+  .layout-btn.active { border-color: var(--ui-accent); color: var(--ui-accent); }
+
+  .layout-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    opacity: 0.6;
+  }
+
+  .layout-btn.active .layout-icon { opacity: 1; }
+
+  .li-bar { height: 3px; background: currentColor; border-radius: 2px; }
+  .li-bar.wide { width: 100%; }
+  .li-bar.mid { width: 70%; }
+  .li-bar.short { width: 45%; }
+  .li-bar.tiny { width: 30%; }
+
+  /* Fields */
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--ui-muted);
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+
+  label:first-child { margin-top: 0; }
+
+  input[type="text"], textarea, select {
+    width: 100%;
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+    color: var(--ui-text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--ui-accent);
+  }
+
+  textarea { min-height: 80px; }
+
+  /* Icon picker */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .icon-opt {
+    aspect-ratio: 1;
+    background: #333;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: all 0.15s;
+  }
+
+  .icon-opt:hover { border-color: #555; }
+  .icon-opt.selected { border-color: var(--ui-accent); background: rgba(158,65,191,0.15); }
+  .icon-opt img { width: 100%; height: 100%; object-fit: contain; }
+  .icon-opt.none-opt { font-size: 16px; color: var(--ui-muted); }
+
+  /* Slide counter field */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--ui-accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { filter: brightness(1.1); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ui-muted);
+    border: 1px solid var(--ui-border);
+  }
+
+  .btn-ghost:hover { color: var(--ui-text); border-color: #555; }
+
+  .btn-danger {
+    background: transparent;
+    color: #e05555;
+    border: 1px solid #6a2525;
+  }
+
+  .btn-danger:hover { background: rgba(224,85,85,0.1); }
+
+  /* ── MAIN AREA ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #toolbar {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--ui-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  #toolbar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ui-text);
+  }
+
+  .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  #slide-info { font-size: 12px; color: var(--ui-muted); }
+
+  /* Preview area */
+  #preview-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #111;
+    padding: 20px;
+  }
+
+  #slide-canvas-wrap {
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+
+  #slide-canvas {
+    width: 540px;
+    height: 540px;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+  }
+
+  /* ── SLIDE TRAY ── */
+  #tray {
+    height: 130px;
+    min-height: 130px;
+    background: var(--ui-surface);
+    border-top: 1px solid var(--ui-border);
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 10px;
+    overflow-x: auto;
+  }
+
+  .tray-thumb {
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+    border: 2px solid var(--ui-border);
+    border-radius: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.15s;
+    background: #333;
+  }
+
+  .tray-thumb.active { border-color: var(--ui-accent); }
+  .tray-thumb:hover { border-color: #666; }
+
+  .tray-thumb .thumb-inner {
+    width: 540px;
+    height: 540px;
+    transform-origin: top left;
+    transform: scale(0.1667);
+    pointer-events: none;
+  }
+
+  .tray-thumb .thumb-del {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    border: none;
+    color: #aaa;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .tray-thumb .thumb-num {
+    position: absolute;
+    bottom: 2px; left: 4px;
+    font-size: 8px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 700;
+  }
+
+  .tray-add {
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+    border: 2px dashed var(--ui-border);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--ui-muted);
+    font-size: 11px;
+    background: transparent;
+    transition: all 0.15s;
+  }
+
+  .tray-add:hover { border-color: #555; color: var(--ui-text); }
+  .tray-add span { font-size: 22px; line-height: 1; }
+
+  /* ── SLIDE TEMPLATES ── */
+  /* Shared base */
+  .slide {
+    width: 540px;
+    height: 540px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── JP BRAND ── */
+  .jp-cover {
+    background: #2c3d50;
+    padding: 48px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .jp-cover .jp-eyebrow {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8b7417;
+  }
+
+  .jp-cover .jp-headline {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    font-style: italic;
+    line-height: 1.05;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .jp-cover .jp-headline em {
+    color: #dfb81f;
+    font-style: italic;
+  }
+
+  .jp-cover .jp-sub {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    margin-top: 12px;
+    line-height: 1.45;
+  }
+
+  .jp-cover .jp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .jp-cover .jp-handle {
+    font-size: 11px;
+    color: #8b7417;
+    letter-spacing: 1px;
+  }
+
+  .jp-cover .jp-logo-img { height: 36px; }
+
+  .jp-cover .jp-accent-line {
+    width: 60px;
+    height: 3px;
+    background: #dfb81f;
+    margin-bottom: 28px;
+  }
+
+  /* JP Content slide */
+  .jp-content {
+    background: #ffffff;
+    padding: 44px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .jp-content .jp-num {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 80px;
+    font-weight: 800;
+    font-style: italic;
+    color: rgba(44,61,80,0.08);
+    line-height: 1;
+    margin-bottom: -12px;
+  }
+
+  .jp-content .jp-hl {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 38px;
+    font-weight: 800;
+    font-style: italic;
+    color: #2c3d50;
+    line-height: 1.1;
+  }
+
+  .jp-content .jp-hl em { color: #8b7417; }
+
+  .jp-content .jp-body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.7;
+    margin-top: 20px;
+    flex: 1;
+  }
+
+  .jp-content .jp-bar {
+    width: 40px;
+    height: 4px;
+    background: #dfb81f;
+    margin-bottom: 18px;
+  }
+
+  .jp-content .jp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 14px;
+    margin-top: 16px;
+  }
+
+  .jp-content .jp-footer .jp-handle { font-size: 10px; color: #8b7417; letter-spacing: 1px; }
+  .jp-content .jp-footer .jp-pg { font-size: 10px; color: #aaa; }
+
+  /* JP Quote */
+  .jp-quote {
+    background: #2c3d50;
+    padding: 60px 52px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .jp-quote .qmark {
+    font-family: Georgia, serif;
+    font-size: 120px;
+    color: #dfb81f;
+    line-height: 0.7;
+    opacity: 0.5;
+  }
+
+  .jp-quote .qtext {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    font-style: italic;
+    color: #ffffff;
+    line-height: 1.45;
+  }
+
+  .jp-quote .qattr {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    color: #8b7417;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* JP List */
+  .jp-list {
+    background: #ffffff;
+    padding: 44px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .jp-list .jp-list-header .jp-hl {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    font-style: italic;
+    color: #2c3d50;
+    line-height: 1.15;
+  }
+
+  .jp-list .jp-list-header .jp-hl em { color: #8b7417; }
+
+  .jp-list .jp-list-header .jp-bar {
+    width: 40px;
+    height: 4px;
+    background: #dfb81f;
+    margin-bottom: 16px;
+  }
+
+  .jp-list ul {
+    list-style: none;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .jp-list ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 15px;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  .jp-list ul li::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #dfb81f;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .jp-list .jp-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 12px;
+    margin-top: 16px;
+    font-size: 10px;
+    color: #aaa;
+  }
+
+  .jp-list .jp-footer .jp-handle { color: #8b7417; letter-spacing: 1px; }
+
+  /* JP CTA */
+  .jp-cta {
+    background: #2c3d50;
+    padding: 48px 52px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .jp-cta .jp-cta-pre {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8b7417;
+    font-weight: 600;
+  }
+
+  .jp-cta .jp-cta-hl {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    font-style: italic;
+    color: #fff;
+    line-height: 1.08;
+  }
+
+  .jp-cta .jp-cta-hl em { color: #dfb81f; }
+
+  .jp-cta .jp-cta-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+
+  .jp-cta .jp-cta-pill {
+    display: inline-block;
+    background: #dfb81f;
+    color: #2c3d50;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 24px;
+    align-self: flex-start;
+    letter-spacing: 0.5px;
+  }
+
+  .jp-cta .jp-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ── HEA BRAND ── */
+  .hea-cover {
+    background: #9E41BF;
+    padding: 48px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hea-cover .hea-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 20px;
+    align-self: flex-start;
+  }
+
+  .hea-cover .hea-headline {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 50px;
+    font-weight: 900;
+    line-height: 1.05;
+    color: #ffffff;
+  }
+
+  .hea-cover .hea-sub {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  .hea-cover .hea-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hea-cover .hea-handle {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.5px;
+  }
+
+  .hea-cover .hea-logo-img { height: 34px; filter: brightness(0) invert(1); opacity: 0.9; }
+
+  /* HEA Content slide */
+  .hea-content {
+    background: #ffffff;
+    padding: 44px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hea-content .hea-pill {
+    display: inline-block;
+    border: 1.5px solid #9E41BF;
+    color: #9E41BF;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    align-self: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .hea-content .hea-num-large {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 88px;
+    font-weight: 900;
+    color: #F3E8F8;
+    line-height: 1;
+    position: absolute;
+    right: 32px;
+    top: 32px;
+  }
+
+  .hea-content .hea-hl {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: #3D2A35;
+    line-height: 1.12;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hea-content .hea-hl em {
+    color: #9E41BF;
+    font-style: normal;
+  }
+
+  .hea-content .hea-body {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: #555;
+    line-height: 1.7;
+    margin-top: 18px;
+    flex: 1;
+  }
+
+  .hea-content .hea-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #f0e6f5;
+    padding-top: 14px;
+    margin-top: 16px;
+  }
+
+  .hea-content .hea-handle { font-family: 'Montserrat', sans-serif; font-size: 10px; color: #9E41BF; font-weight: 600; }
+  .hea-content .hea-pg { font-size: 10px; color: #bbb; font-family: 'Montserrat', sans-serif; }
+
+  /* HEA List */
+  .hea-list {
+    background: #3D2A35;
+    padding: 44px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hea-list .hea-list-hl {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+
+  .hea-list .hea-list-sub {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    color: #AF81BF;
+    margin-bottom: 24px;
+  }
+
+  .hea-list ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .hea-list ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.55;
+  }
+
+  .hea-list ul li .hea-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #9E41BF;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .hea-list .hea-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .hea-list .hea-footer .hea-handle { color: #AF81BF; }
+
+  /* HEA Quote */
+  .hea-quote {
+    background: #F3E8F8;
+    padding: 56px 52px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  .hea-quote .hea-q-bar {
+    width: 48px;
+    height: 5px;
+    background: #9E41BF;
+    border-radius: 3px;
+  }
+
+  .hea-quote .hea-q-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #3D2A35;
+    line-height: 1.4;
+  }
+
+  .hea-quote .hea-q-attr {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9E41BF;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .hea-quote .hea-icon-wrap {
+    position: absolute;
+    right: 36px;
+    bottom: 36px;
+    width: 64px;
+    height: 64px;
+    background: #9E41BF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hea-quote .hea-icon-wrap img { width: 36px; height: 36px; object-fit: contain; }
+
+  /* HEA CTA */
+  .hea-cta {
+    background: #9E41BF;
+    padding: 52px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .hea-cta .hea-cta-pre {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .hea-cta .hea-cta-hl {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 42px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.1;
+  }
+
+  .hea-cta .hea-cta-hl em {
+    font-style: normal;
+    background: rgba(255,255,255,0.15);
+    padding: 0 4px;
+    border-radius: 4px;
+  }
+
+  .hea-cta .hea-cta-sub {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+  }
+
+  .hea-cta .hea-cta-pill {
+    display: inline-block;
+    background: #fff;
+    color: #9E41BF;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 11px 24px;
+    border-radius: 24px;
+    align-self: flex-start;
+    letter-spacing: 0.3px;
+  }
+
+  .hea-cta .hea-icon-bg {
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 180px;
+    height: 180px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+
+  .hea-cta .hea-icon-bg2 {
+    position: absolute;
+    right: 30px;
+    bottom: 30px;
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+
+  .hea-cta .hea-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* Icon in HEA content slide */
+  .hea-icon-circle {
+    width: 56px;
+    height: 56px;
+    background: #9E41BF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .hea-icon-circle img { width: 30px; height: 30px; object-fit: contain; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 160px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 999;
+  }
+
+  #toast.show { opacity: 1; }
+
+  /* Colour theme swatches */
+  .theme-swatches {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .theme-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  .theme-swatch:hover { outline-color: #666; }
+  .theme-swatch.active { outline-color: #fff; }
+
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+
+  <div class="sidebar-section">
+    <h3>Brand</h3>
+    <div class="brand-tabs">
+      <button class="brand-tab active" data-brand="jp" onclick="setBrand('jp')">Jonathan Pay</button>
+      <button class="brand-tab" data-brand="hea" onclick="setBrand('hea')">HEA</button>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--ui-muted);margin-bottom:8px">Colour Theme</div>
+      <div class="theme-swatches" id="theme-swatches"></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Layout</h3>
+    <div class="layout-grid">
+      <button class="layout-btn active" data-layout="cover" onclick="setLayout('cover')">
+        <div class="layout-icon">
+          <div class="li-bar wide"></div>
+          <div class="li-bar wide" style="height:5px"></div>
+          <div class="li-bar mid"></div>
+          <div class="li-bar short"></div>
+        </div>
+        Cover
+      </button>
+      <button class="layout-btn" data-layout="content" onclick="setLayout('content')">
+        <div class="layout-icon">
+          <div class="li-bar short"></div>
+          <div class="li-bar wide" style="height:5px"></div>
+          <div class="li-bar wide"></div>
+          <div class="li-bar wide"></div>
+          <div class="li-bar mid"></div>
+        </div>
+        Content
+      </button>
+      <button class="layout-btn" data-layout="list" onclick="setLayout('list')">
+        <div class="layout-icon" style="gap:4px">
+          <div class="li-bar wide" style="height:4px"></div>
+          <div style="display:flex;gap:3px;align-items:center"><div style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></div><div class="li-bar wide"></div></div>
+          <div style="display:flex;gap:3px;align-items:center"><div style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></div><div class="li-bar mid"></div></div>
+          <div style="display:flex;gap:3px;align-items:center"><div style="width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0"></div><div class="li-bar wide"></div></div>
+        </div>
+        List
+      </button>
+      <button class="layout-btn" data-layout="quote" onclick="setLayout('quote')">
+        <div class="layout-icon">
+          <div style="font-size:18px;color:currentColor;line-height:1">"</div>
+          <div class="li-bar wide"></div>
+          <div class="li-bar mid"></div>
+          <div class="li-bar wide"></div>
+        </div>
+        Quote
+      </button>
+      <button class="layout-btn" data-layout="cta" onclick="setLayout('cta')">
+        <div class="layout-icon">
+          <div class="li-bar wide" style="height:4px"></div>
+          <div class="li-bar wide" style="height:7px"></div>
+          <div class="li-bar mid"></div>
+          <div class="li-bar short" style="height:6px;border-radius:4px"></div>
+        </div>
+        CTA
+      </button>
+    </div>
+  </div>
+
+  <!-- Content fields — dynamically shown/hidden per layout -->
+  <div class="sidebar-section" id="fields-section">
+    <h3>Content</h3>
+    <div id="fields"></div>
+  </div>
+
+  <!-- Icon picker (HEA only) -->
+  <div class="sidebar-section" id="icon-section" style="display:none">
+    <h3>Icon</h3>
+    <div class="icon-grid" id="icon-grid">
+      <div class="icon-opt none-opt selected" data-icon="none" onclick="selectIcon('none')">—</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <h3>Slide Number</h3>
+    <div class="two-col">
+      <div>
+        <label>Current</label>
+        <input type="text" id="f-pg-cur" value="01" oninput="updateSlide()">
+      </div>
+      <div>
+        <label>Total</label>
+        <input type="text" id="f-pg-tot" value="05" oninput="updateSlide()">
+      </div>
+    </div>
+    <label style="margin-top:10px">Handle / Username</label>
+    <input type="text" id="f-handle" value="@jonathanpay" oninput="updateSlide()">
+  </div>
+
+</aside>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="toolbar">
+    <h1>Carousel Maker</h1>
+    <div class="toolbar-actions">
+      <span id="slide-info">Slide 1 of 1</span>
+      <button class="btn btn-ghost" onclick="duplicateSlide()">Duplicate</button>
+      <button class="btn btn-ghost" onclick="openImport()">↑ Import JSON</button>
+      <button class="btn btn-primary" onclick="exportSlide()">↓ Export PNG</button>
+    </div>
+  </div>
+
+  <div id="preview-area">
+    <div id="slide-canvas-wrap">
+      <div id="slide-canvas"></div>
+    </div>
+  </div>
+
+  <div id="tray">
+    <button class="tray-add" onclick="addSlide()">
+      <span>+</span>
+      Add slide
+    </button>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div id="import-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center">
+  <div style="background:#252525;border:1px solid #444;border-radius:12px;padding:24px;width:500px;max-width:90vw;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-size:14px;font-weight:600">Import Slides JSON</h2>
+      <button onclick="closeImport()" style="background:none;border:none;color:#888;font-size:18px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <p style="font-size:12px;color:#888;line-height:1.5">Paste the JSON array generated by Claude. This will <strong style="color:#e0e0e0">replace</strong> all current slides.</p>
+    <textarea id="import-textarea" placeholder='[{"brand":"jp","layout":"cover",...}]' style="min-height:180px;font-family:monospace;font-size:11px;background:#1a1a1a;border:1px solid #444;border-radius:6px;color:#e0e0e0;padding:10px;resize:vertical;outline:none"></textarea>
+    <div id="import-error" style="font-size:11px;color:#e05555;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeImport()">Cancel</button>
+      <button class="btn btn-primary" onclick="loadImport()">Load Slides</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">Copied!</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const ICON_LIST = [
+  { key: 'noun-email-6967848.png',             label: 'Email' },
+  { key: 'noun-heart-1686625-FFFFFF.png',      label: 'Heart' },
+  { key: 'noun-brain-6789372-FFFFFF.png',      label: 'Brain' },
+  { key: 'noun-strategy-1017874-FFFFFF.png',   label: 'Strategy' },
+  { key: 'noun-target-1603554-FFFFFF.png',     label: 'Target' },
+  { key: 'noun-graduation-1604522-FFFFFF.png', label: 'Graduate' },
+  { key: 'noun-book-1604498-FFFFFF.png',       label: 'Book' },
+  { key: 'noun-bolt-1683226-FFFFFF.png',       label: 'Bolt' },
+  { key: 'noun-chart-6788694-FFFFFF.png',      label: 'Chart' },
+  { key: 'noun-compass-1683250-FFFFFF.png',    label: 'Compass' },
+  { key: 'noun-puzzle-1604505-FFFFFF.png',     label: 'Puzzle' },
+  { key: 'noun-teacher-1604503-FFFFFF.png',    label: 'Teacher' },
+  { key: 'noun-badge-1604519-FFFFFF.png',      label: 'Badge' },
+  { key: 'noun-mind-1604702-FFFFFF.png',       label: 'Mind' },
+  { key: 'noun-shield-1686345-FFFFFF.png',     label: 'Shield' },
+  { key: 'noun-plan-1616229-FFFFFF.png',       label: 'Plan' },
+  { key: 'noun-notebook-1604709-FFFFFF.png',   label: 'Notebook' },
+  { key: 'noun-design-3554276-FFFFFF.png',     label: 'Design' },
+  { key: 'noun-handshake-1603584-FFFFFF.png',  label: 'Handshake' },
+  { key: 'noun-growth-1016135.png',            label: 'Growth' },
+];
+
+const HEA_THEMES = {
+  purple: { key:'purple', label:'Purple', swatch:'#9E41BF',
+    darkBg:'#9E41BF', darkText:'#fff', darkSub:'rgba(255,255,255,0.75)',
+    darkHandle:'rgba(255,255,255,0.6)', darkFade:'rgba(255,255,255,0.15)',
+    listBg:'#3D2A35', listAccent:'#9E41BF', listSub:'#AF81BF',
+    lightBg:'#F3E8F8', accent:'#9E41BF', pillBorder:'#9E41BF', pillText:'#9E41BF',
+    numColor:'#F3E8F8', qBar:'#9E41BF', qText:'#3D2A35', qAttr:'#9E41BF',
+    ctaPill:'#fff', ctaPillText:'#9E41BF' },
+  cyan: { key:'cyan', label:'Cyan', swatch:'#22CEF2',
+    darkBg:'#22CEF2', darkText:'#1a3d4a', darkSub:'rgba(10,50,65,0.75)',
+    darkHandle:'rgba(10,50,65,0.6)', darkFade:'rgba(255,255,255,0.25)',
+    listBg:'#0a4a5c', listAccent:'#22CEF2', listSub:'#7CE5F7',
+    lightBg:'#E6F9FD', accent:'#0a9abf', pillBorder:'#0a9abf', pillText:'#0a7a99',
+    numColor:'#D0F3FB', qBar:'#22CEF2', qText:'#0a3d4a', qAttr:'#0a9abf',
+    ctaPill:'#fff', ctaPillText:'#0a7a99' },
+  green: { key:'green', label:'Green', swatch:'#21BF3D',
+    darkBg:'#21BF3D', darkText:'#fff', darkSub:'rgba(255,255,255,0.8)',
+    darkHandle:'rgba(255,255,255,0.6)', darkFade:'rgba(255,255,255,0.2)',
+    listBg:'#0d4a1c', listAccent:'#21BF3D', listSub:'#7ADE92',
+    lightBg:'#E8F8EC', accent:'#17a032', pillBorder:'#17a032', pillText:'#0d7a26',
+    numColor:'#D0F5D8', qBar:'#21BF3D', qText:'#0a3a18', qAttr:'#17a032',
+    ctaPill:'#fff', ctaPillText:'#0d7a26' },
+};
+
+const JP_THEMES = {
+  navy:       { key:'navy',       label:'Navy',        swatch:'#2c3d50',
+    darkBg:'#2c3d50', darkText:'#fff',
+    darkAccent:'#dfb81f', darkLink:'#8b7417',
+    lightAccent:'#dfb81f', lightLink:'#8b7417' },
+  gold_dark:  { key:'gold_dark',  label:'Dark Gold',   swatch:'#8b7417',
+    darkBg:'#8b7417', darkText:'#fff',
+    darkAccent:'#2c3d50', darkLink:'#2c3d50',
+    lightAccent:'#dfb81f', lightLink:'#8b7417' },
+  gold_light: { key:'gold_light', label:'Bright Gold',  swatch:'#dfb81f',
+    darkBg:'#dfb81f', darkText:'#2c3d50',
+    darkAccent:'#2c3d50', darkLink:'#2c3d50',
+    lightAccent:'#dfb81f', lightLink:'#8b7417' },
+};
+
+let slides = [
+  { brand: 'jp', layout: 'cover', icon: 'none', theme: 'navy', pg: '01', pgTot: '05',
+    handle: '@jonathanpay', fields: {} }
+];
+let currentIdx = 0;
+let currentBrand = 'jp';
+let currentLayout = 'cover';
+let currentIcon = 'none';
+let currentTheme = 'navy';
+
+// ── FIELD DEFINITIONS ─────────────────────────────────────────────────────
+const FIELD_DEFS = {
+  cover: [
+    { id: 'eyebrow', label: 'Eyebrow / Tag', placeholder: 'Email Marketing' },
+    { id: 'headline', label: 'Headline (use *word* for accent colour)', placeholder: 'The *email* guide you need', type: 'textarea' },
+    { id: 'sub',     label: 'Subheadline', placeholder: 'Swipe to learn the 5 things that actually move the needle.', type: 'textarea' },
+  ],
+  content: [
+    { id: 'num',      label: 'Tip / Step number', placeholder: '01' },
+    { id: 'headline', label: 'Headline', placeholder: 'Write subject lines that *get* opened', type: 'textarea' },
+    { id: 'body',     label: 'Body text', placeholder: 'Your subject line is the door. If it doesn\'t open, nothing inside matters.', type: 'textarea' },
+  ],
+  list: [
+    { id: 'headline', label: 'Headline', placeholder: '5 things *every* email needs' },
+    { id: 'sub',      label: 'Sub-label', placeholder: 'A quick checklist' },
+    { id: 'item1', label: 'Item 1', placeholder: 'A compelling subject line' },
+    { id: 'item2', label: 'Item 2', placeholder: 'A clear single goal' },
+    { id: 'item3', label: 'Item 3', placeholder: 'Copy that earns the click' },
+    { id: 'item4', label: 'Item 4', placeholder: 'A CTA that makes sense' },
+    { id: 'item5', label: 'Item 5 (optional)', placeholder: '' },
+  ],
+  quote: [
+    { id: 'quote',  label: 'Quote text', placeholder: 'The best email you\'ll ever send is the one your subscriber actually asked for.', type: 'textarea' },
+    { id: 'attr',   label: 'Attribution', placeholder: '— Jonathan Pay' },
+  ],
+  cta: [
+    { id: 'pre',     label: 'Pre-headline', placeholder: 'Ready to level up?' },
+    { id: 'headline', label: 'Headline', placeholder: 'Start sending *smarter* emails today' , type: 'textarea' },
+    { id: 'sub',     label: 'Body / Action text', placeholder: 'Follow for weekly email strategy tips.', type: 'textarea' },
+    { id: 'pill',    label: 'CTA Button label', placeholder: 'Follow for more →' },
+  ],
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function init() {
+  buildIconGrid();
+  buildThemeSwatches();
+  renderFields();
+  renderTray();
+  renderSlide();
+  loadSlideIntoSidebar(0);
+}
+
+// ── THEME SWATCHES ────────────────────────────────────────────────────────
+function buildThemeSwatches() {
+  const container = document.getElementById('theme-swatches');
+  container.innerHTML = '';
+  const map = currentBrand === 'hea' ? HEA_THEMES : JP_THEMES;
+  Object.values(map).forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'theme-swatch' + (t.key === currentTheme ? ' active' : '');
+    btn.style.background = t.swatch;
+    btn.title = t.label;
+    btn.dataset.theme = t.key;
+    btn.onclick = () => setTheme(t.key);
+    container.appendChild(btn);
+  });
+}
+
+function setTheme(key) {
+  currentTheme = key;
+  document.querySelectorAll('.theme-swatch').forEach(el => el.classList.toggle('active', el.dataset.theme === key));
+  saveCurrentSlide();
+  renderSlide();
+  refreshThumb(currentIdx);
+}
+
+// ── BRAND / LAYOUT SWITCHING ──────────────────────────────────────────────
+function setBrand(b) {
+  currentBrand = b;
+  // Reset theme to brand default when switching
+  currentTheme = b === 'hea' ? 'purple' : 'navy';
+  document.querySelectorAll('.brand-tab').forEach(el => el.classList.toggle('active', el.dataset.brand === b));
+  document.getElementById('icon-section').style.display = (b === 'hea') ? '' : 'none';
+  buildThemeSwatches();
+  const h = document.getElementById('f-handle');
+  if (!h.value || h.value === '@jonathanpay' || h.value === '@holisticemailacademy') {
+    h.value = b === 'hea' ? '@holisticemailacademy' : '@jonathanpay';
+  }
+  saveCurrentSlide();
+  renderSlide();
+  refreshThumb(currentIdx);
+}
+
+function setLayout(l) {
+  currentLayout = l;
+  document.querySelectorAll('.layout-btn').forEach(el => el.classList.toggle('active', el.dataset.layout === l));
+  renderFields();
+  saveCurrentSlide();
+  renderSlide();
+  refreshThumb(currentIdx);
+}
+
+// ── FIELD RENDERING ───────────────────────────────────────────────────────
+function renderFields() {
+  const container = document.getElementById('fields');
+  const defs = FIELD_DEFS[currentLayout] || [];
+  const saved = slides[currentIdx]?.fields || {};
+  container.innerHTML = '';
+  defs.forEach(def => {
+    const label = document.createElement('label');
+    label.textContent = def.label;
+    container.appendChild(label);
+    let el;
+    if (def.type === 'textarea') {
+      el = document.createElement('textarea');
+      el.rows = 3;
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+    }
+    el.id = 'f-' + def.id;
+    el.placeholder = def.placeholder || '';
+    el.value = saved[def.id] !== undefined ? saved[def.id] : def.placeholder || '';
+    el.addEventListener('input', () => { saveCurrentSlide(); renderSlide(); refreshThumb(currentIdx); });
+    container.appendChild(el);
+  });
+}
+
+// ── ICON GRID ──────────────────────────────────────────────────────────────
+function buildIconGrid() {
+  const grid = document.getElementById('icon-grid');
+  ICON_LIST.forEach(icon => {
+    const div = document.createElement('div');
+    div.className = 'icon-opt';
+    div.dataset.icon = icon.key;
+    div.title = icon.label;
+    div.onclick = () => selectIcon(icon.key);
+    const img = document.createElement('img');
+    img.src = 'assets/icons/' + icon.key;
+    img.alt = icon.label;
+    div.appendChild(img);
+    grid.appendChild(div);
+  });
+}
+
+function selectIcon(key) {
+  currentIcon = key;
+  document.querySelectorAll('.icon-opt').forEach(el => el.classList.toggle('selected', el.dataset.icon === key));
+  saveCurrentSlide();
+  renderSlide();
+  refreshThumb(currentIdx);
+}
+
+// ── SLIDE STATE ───────────────────────────────────────────────────────────
+function getFieldValues() {
+  const defs = FIELD_DEFS[currentLayout] || [];
+  const out = {};
+  defs.forEach(def => {
+    const el = document.getElementById('f-' + def.id);
+    if (el) out[def.id] = el.value;
+  });
+  return out;
+}
+
+function saveCurrentSlide() {
+  slides[currentIdx] = {
+    brand: currentBrand,
+    layout: currentLayout,
+    icon: currentIcon,
+    theme: currentTheme,
+    pg: document.getElementById('f-pg-cur')?.value || '01',
+    pgTot: document.getElementById('f-pg-tot')?.value || '05',
+    handle: document.getElementById('f-handle')?.value || '',
+    fields: getFieldValues(),
+  };
+}
+
+function loadSlideIntoSidebar(idx) {
+  const s = slides[idx];
+  currentBrand = s.brand;
+  currentLayout = s.layout;
+  currentIcon = s.icon || 'none';
+  currentTheme = s.theme || (s.brand === 'hea' ? 'purple' : 'navy');
+
+  document.querySelectorAll('.brand-tab').forEach(el => el.classList.toggle('active', el.dataset.brand === currentBrand));
+  document.querySelectorAll('.layout-btn').forEach(el => el.classList.toggle('active', el.dataset.layout === currentLayout));
+  document.getElementById('icon-section').style.display = (currentBrand === 'hea') ? '' : 'none';
+  document.querySelectorAll('.icon-opt').forEach(el => el.classList.toggle('selected', el.dataset.icon === currentIcon));
+  buildThemeSwatches();
+
+  document.getElementById('f-pg-cur').value = s.pg || '01';
+  document.getElementById('f-pg-tot').value = s.pgTot || '05';
+  document.getElementById('f-handle').value = s.handle || '';
+
+  renderFields();
+  // Re-populate field values from saved state
+  const defs = FIELD_DEFS[currentLayout] || [];
+  defs.forEach(def => {
+    const el = document.getElementById('f-' + def.id);
+    if (el && s.fields[def.id] !== undefined) el.value = s.fields[def.id];
+  });
+}
+
+// ── SLIDE RENDERING ───────────────────────────────────────────────────────
+function parseAccent(text, color) {
+  const style = color ? ` style="color:${color}"` : '';
+  return (text || '').replace(/\*(.*?)\*/g, `<em${style}>$1</em>`);
+}
+
+function getIconSrc(key) {
+  if (!key || key === 'none') return null;
+  return 'assets/icons/' + key;
+}
+
+function iconCircleHTML(iconKey, size=56) {
+  const src = getIconSrc(iconKey);
+  if (!src) return '';
+  return `<div class="hea-icon-circle" style="width:${size}px;height:${size}px">
+    <img src="${src}" style="width:${size*0.55}px;height:${size*0.55}px;object-fit:contain">
+  </div>`;
+}
+
+function renderSlide(targetEl, slideData) {
+  const el = targetEl || document.getElementById('slide-canvas');
+  const s = slideData || slides[currentIdx];
+  const f = s.fields || {};
+  const pg = s.pg || '01';
+  const pgTot = s.pgTot || '05';
+  const handle = s.handle || '';
+  const icon = s.icon || 'none';
+
+  let html = '';
+
+  if (s.brand === 'jp') {
+    const t = JP_THEMES[s.theme || 'navy'] || JP_THEMES.navy;
+    const dimText = t.darkText === '#2c3d50' ? 'rgba(44,61,80,0.45)' : 'rgba(255,255,255,0.35)';
+    const logoFilter = t.darkText === '#2c3d50'
+      ? 'brightness(0) opacity(0.3)'
+      : 'brightness(0) invert(1) opacity(0.35)';
+
+    if (s.layout === 'cover') {
+      const headline = parseAccent(f.headline || 'Your *headline* here', t.darkAccent);
+      html = `<div class="slide jp-cover" style="background:${t.darkBg}">
+        <div>
+          <div class="jp-eyebrow" style="color:${t.darkLink}">${f.eyebrow || 'Email Strategy'}</div>
+          <img src="assets/logos/jp-full.png" class="jp-logo-img" style="margin-top:10px;filter:${logoFilter}">
+        </div>
+        <div>
+          <div class="jp-accent-line" style="background:${t.darkAccent}"></div>
+          <h1 class="jp-headline" style="color:${t.darkText}">${headline}</h1>
+          ${f.sub ? `<p class="jp-sub" style="color:${t.darkText === '#2c3d50' ? 'rgba(44,61,80,0.7)' : 'rgba(255,255,255,0.7)'}">${f.sub}</p>` : ''}
+        </div>
+        <div class="jp-footer">
+          <span class="jp-handle" style="color:${t.darkLink}">${handle}</span>
+          <span style="font-size:10px;color:${dimText}">${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'content') {
+      const headline = parseAccent(f.headline || 'Your *headline* here', t.lightLink);
+      html = `<div class="slide jp-content">
+        <div style="position:relative">
+          <div style="position:absolute;right:0;top:-8px;font-family:'Open Sans',sans-serif;font-size:96px;font-weight:800;font-style:italic;color:rgba(44,61,80,0.07);line-height:1">${f.num || '01'}</div>
+          <div class="jp-bar" style="background:${t.lightAccent}"></div>
+          <h2 class="jp-hl">${headline}</h2>
+          <p class="jp-body">${f.body || 'Your body text goes here. Keep it focused — one idea per slide.'}</p>
+        </div>
+        <div class="jp-footer">
+          <span class="jp-handle" style="color:${t.lightLink}">${handle}</span>
+          <span class="jp-pg">${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'list') {
+      const headline = parseAccent(f.headline || 'Your *list* title', t.lightLink);
+      const items = [f.item1, f.item2, f.item3, f.item4, f.item5].filter(Boolean);
+      const liHTML = items.map(i => `<li>${i}</li>`).join('');
+      html = `<div class="slide jp-list">
+        <div class="jp-list-header">
+          <div class="jp-bar" style="background:${t.lightAccent}"></div>
+          <h2 class="jp-hl">${headline}</h2>
+          ${f.sub ? `<p style="font-family:'Open Sans',sans-serif;font-size:13px;color:#888;margin-top:6px">${f.sub}</p>` : ''}
+        </div>
+        <ul>${liHTML}</ul>
+        <div class="jp-footer">
+          <span class="jp-handle" style="color:${t.lightLink}">${handle}</span>
+          <span>${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'quote') {
+      html = `<div class="slide jp-quote" style="background:${t.darkBg}">
+        <div class="qmark" style="color:${t.darkAccent}">"</div>
+        <p class="qtext" style="color:${t.darkText}">${f.quote || 'Your quote goes here. Make it punchy.'}</p>
+        <span class="qattr" style="color:${t.darkLink}">${f.attr || '— Jonathan Pay'}</span>
+        <div style="position:absolute;bottom:32px;right:36px;font-size:10px;color:${dimText}">${pg} / ${pgTot}</div>
+      </div>`;
+
+    } else if (s.layout === 'cta') {
+      const headline = parseAccent(f.headline || 'Start sending *smarter* emails', t.darkAccent);
+      html = `<div class="slide jp-cta" style="background:${t.darkBg}">
+        ${f.pre ? `<div class="jp-cta-pre" style="color:${t.darkLink}">${f.pre}</div>` : ''}
+        <h2 class="jp-cta-hl" style="color:${t.darkText}">${headline}</h2>
+        ${f.sub ? `<p class="jp-cta-sub" style="color:${t.darkText === '#2c3d50' ? 'rgba(44,61,80,0.65)' : 'rgba(255,255,255,0.65)'}">${f.sub}</p>` : ''}
+        ${f.pill ? `<div class="jp-cta-pill" style="background:${t.darkAccent};color:${t.darkBg}">${f.pill}</div>` : ''}
+        <div class="jp-footer">
+          <span style="color:${dimText}">${handle}</span>
+          <span style="color:${dimText}">${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+    }
+
+  } else {
+    // HEA brand
+    const t = HEA_THEMES[s.theme || 'purple'] || HEA_THEMES.purple;
+
+    if (s.layout === 'cover') {
+      const headline = f.headline || 'Email Marketing Masterclass';
+      html = `<div class="slide hea-cover" style="background:${t.darkBg}">
+        <div>
+          <div class="hea-tag" style="background:${t.darkFade};color:${t.darkText}">${f.eyebrow || 'Holistic Email Academy'}</div>
+        </div>
+        <div>
+          <h1 class="hea-headline" style="color:${t.darkText}">${headline}</h1>
+          ${f.sub ? `<p class="hea-sub" style="color:${t.darkSub}">${f.sub}</p>` : ''}
+        </div>
+        <div class="hea-footer">
+          <span class="hea-handle" style="color:${t.darkHandle}">${handle}</span>
+          <img src="assets/logos/hea-logo-inv.png" class="hea-logo-img" style="filter:brightness(0) ${t.darkText==='#fff'?'invert(1)':''}">
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'content') {
+      const headline = parseAccent(f.headline || 'Why *strategy* beats tactics', t.accent);
+      const iconHTML = icon !== 'none' ? `<div class="hea-icon-circle" style="background:${t.accent}"><img src="assets/icons/${icon}" style="width:30px;height:30px;object-fit:contain"></div>` : '';
+      html = `<div class="slide hea-content" style="position:relative">
+        <div style="position:absolute;right:32px;top:32px;font-family:'Montserrat',sans-serif;font-size:88px;font-weight:900;color:${t.numColor};line-height:1">${f.num || '01'}</div>
+        ${iconHTML}
+        <div class="hea-pill" style="border-color:${t.pillBorder};color:${t.pillText}">${f.num ? 'Step ' + f.num : 'Tip'}</div>
+        <h2 class="hea-hl" style="color:#3D2A35">${headline}</h2>
+        <p class="hea-body">${f.body || 'Your body copy goes here. Keep it focused and direct.'}</p>
+        <div class="hea-footer" style="border-top:1px solid ${t.lightBg}">
+          <span class="hea-handle" style="color:${t.accent}">${handle}</span>
+          <span class="hea-pg">${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'list') {
+      const items = [f.item1, f.item2, f.item3, f.item4, f.item5].filter(Boolean);
+      const liHTML = items.map(i => `<li><div class="hea-check" style="border-color:${t.listAccent}"><span style="color:${t.listAccent};font-size:10px;font-weight:700">✓</span></div><span>${i}</span></li>`).join('');
+      html = `<div class="slide hea-list" style="background:${t.listBg}">
+        <div>
+          <h2 class="hea-list-hl">${f.headline || 'Email essentials'}</h2>
+          ${f.sub ? `<p class="hea-list-sub" style="color:${t.listSub}">${f.sub}</p>` : ''}
+        </div>
+        <ul>${liHTML}</ul>
+        <div class="hea-footer" style="border-top:1px solid rgba(255,255,255,0.1)">
+          <span class="hea-handle" style="color:${t.listSub}">${handle}</span>
+          <span>${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+
+    } else if (s.layout === 'quote') {
+      const iconSrc = getIconSrc(icon);
+      html = `<div class="slide hea-quote" style="background:${t.lightBg};position:relative">
+        <div class="hea-q-bar" style="background:${t.qBar}"></div>
+        <p class="hea-q-text" style="color:${t.qText}">${f.quote || 'Your quote goes here. Make it count.'}</p>
+        <span class="hea-q-attr" style="color:${t.qAttr}">${f.attr || '— HEA'}</span>
+        ${iconSrc ? `<div class="hea-icon-wrap" style="background:${t.accent}"><img src="${iconSrc}"></div>` : ''}
+      </div>`;
+
+    } else if (s.layout === 'cta') {
+      const headline = parseAccent(f.headline || 'Ready to learn *smarter* email?');
+      html = `<div class="slide hea-cta" style="background:${t.darkBg};position:relative">
+        <div class="hea-icon-bg"></div>
+        <div class="hea-icon-bg2"></div>
+        ${f.pre ? `<div class="hea-cta-pre" style="color:${t.darkHandle}">${f.pre}</div>` : ''}
+        <h2 class="hea-cta-hl" style="color:${t.darkText}">${headline}</h2>
+        ${f.sub ? `<p class="hea-cta-sub" style="color:${t.darkSub}">${f.sub}</p>` : ''}
+        ${f.pill ? `<div class="hea-cta-pill" style="background:${t.ctaPill};color:${t.ctaPillText}">${f.pill}</div>` : ''}
+        <div class="hea-footer">
+          <span style="color:${t.darkHandle}">${handle}</span>
+          <span style="color:${t.darkHandle}">${pg} / ${pgTot}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+// ── SLIDE MANAGEMENT ──────────────────────────────────────────────────────
+function updateSlide() {
+  saveCurrentSlide();
+  renderSlide();
+  refreshThumb(currentIdx);
+  updateSlideInfo();
+}
+
+function addSlide() {
+  saveCurrentSlide();
+  const last = slides[slides.length - 1] || slides[0];
+  const newSlide = {
+    brand: currentBrand,
+    layout: 'content',
+    icon: 'none',
+    pg: String(slides.length + 1).padStart(2, '0'),
+    pgTot: document.getElementById('f-pg-tot').value,
+    handle: document.getElementById('f-handle').value,
+    fields: {},
+  };
+  slides.push(newSlide);
+  renderTray();
+  switchToSlide(slides.length - 1);
+}
+
+function duplicateSlide() {
+  saveCurrentSlide();
+  const copy = JSON.parse(JSON.stringify(slides[currentIdx]));
+  copy.pg = String(slides.length + 1).padStart(2, '0');
+  slides.splice(currentIdx + 1, 0, copy);
+  renderTray();
+  switchToSlide(currentIdx + 1);
+}
+
+function deleteSlide(idx) {
+  if (slides.length === 1) { showToast('Cannot delete the last slide'); return; }
+  slides.splice(idx, 1);
+  if (currentIdx >= slides.length) currentIdx = slides.length - 1;
+  renderTray();
+  loadSlideIntoSidebar(currentIdx);
+  renderSlide();
+  updateSlideInfo();
+}
+
+function switchToSlide(idx) {
+  currentIdx = idx;
+  document.querySelectorAll('.tray-thumb').forEach((el, i) => el.classList.toggle('active', i === idx));
+  loadSlideIntoSidebar(idx);
+  renderSlide();
+  updateSlideInfo();
+}
+
+function updateSlideInfo() {
+  document.getElementById('slide-info').textContent = `Slide ${currentIdx + 1} of ${slides.length}`;
+}
+
+// ── TRAY ──────────────────────────────────────────────────────────────────
+function renderTray() {
+  const tray = document.getElementById('tray');
+  // Clear existing thumbs (keep add button)
+  tray.querySelectorAll('.tray-thumb').forEach(el => el.remove());
+  const addBtn = tray.querySelector('.tray-add');
+
+  slides.forEach((s, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'tray-thumb' + (i === currentIdx ? ' active' : '');
+    wrap.onclick = (e) => { if (!e.target.classList.contains('thumb-del')) switchToSlide(i); };
+
+    const inner = document.createElement('div');
+    inner.className = 'thumb-inner';
+    renderSlide(inner, s);
+
+    const del = document.createElement('button');
+    del.className = 'thumb-del';
+    del.textContent = '×';
+    del.onclick = (e) => { e.stopPropagation(); deleteSlide(i); };
+
+    const num = document.createElement('span');
+    num.className = 'thumb-num';
+    num.textContent = i + 1;
+
+    wrap.appendChild(inner);
+    wrap.appendChild(del);
+    wrap.appendChild(num);
+    tray.insertBefore(wrap, addBtn);
+  });
+
+  updateSlideInfo();
+}
+
+function refreshThumb(idx) {
+  const thumbs = document.querySelectorAll('.tray-thumb');
+  const thumb = thumbs[idx];
+  if (!thumb) return;
+  const inner = thumb.querySelector('.thumb-inner');
+  if (inner) renderSlide(inner, slides[idx]);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+async function exportSlide() {
+  const el = document.getElementById('slide-canvas');
+  showToast('Exporting…');
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+    });
+    const link = document.createElement('a');
+    link.download = `carousel-slide-${String(currentIdx + 1).padStart(2, '0')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Downloaded!');
+  } catch(e) {
+    showToast('Export failed — try right-clicking to copy image');
+    console.error(e);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    if (currentIdx < slides.length - 1) switchToSlide(currentIdx + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    if (currentIdx > 0) switchToSlide(currentIdx - 1);
+  }
+});
+
+// ── IMPORT ───────────────────────────────────────────────────────────────
+function openImport() {
+  const overlay = document.getElementById('import-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('import-textarea').value = '';
+  document.getElementById('import-error').style.display = 'none';
+  setTimeout(() => document.getElementById('import-textarea').focus(), 50);
+}
+
+function closeImport() {
+  document.getElementById('import-overlay').style.display = 'none';
+}
+
+function loadImport() {
+  const raw = document.getElementById('import-textarea').value.trim();
+  const errEl = document.getElementById('import-error');
+  errEl.style.display = 'none';
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch(e) {
+    errEl.textContent = 'Invalid JSON — ' + e.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    errEl.textContent = 'Expected a non-empty JSON array of slides.';
+    errEl.style.display = 'block';
+    return;
+  }
+  // Validate each slide has at least brand + layout
+  for (let i = 0; i < parsed.length; i++) {
+    const s = parsed[i];
+    if (!s.brand || !s.layout) {
+      errEl.textContent = `Slide ${i+1} is missing "brand" or "layout".`;
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+  slides = parsed;
+  currentIdx = 0;
+  currentBrand = slides[0].brand;
+  currentLayout = slides[0].layout;
+  currentTheme = slides[0].theme || (currentBrand === 'hea' ? 'purple' : 'navy');
+  currentIcon = slides[0].icon || 'none';
+  closeImport();
+  renderTray();
+  loadSlideIntoSidebar(0);
+  renderSlide();
+  updateSlideInfo();
+  showToast(`Loaded ${slides.length} slide${slides.length > 1 ? 's' : ''}`);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeImport();
+});
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

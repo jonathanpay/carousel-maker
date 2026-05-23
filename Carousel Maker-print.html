@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Carousel Templates — Print Catalog</title>
+<link rel="stylesheet" href="templates.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #2a2a2e; }
+  body {
+    font-family: 'Open Sans', sans-serif;
+    padding: 40px 20px;
+    color: #fff;
+  }
+  .cover-page {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto 60px;
+    padding: 60px 40px;
+    text-align: center;
+    color: #fff;
+  }
+  .cover-page h1 {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+  .cover-page p {
+    font-size: 18px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.5;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .cover-page .meta {
+    margin-top: 24px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .family-divider {
+    page-break-before: always;
+    break-before: page;
+    width: 100%;
+    max-width: 900px;
+    margin: 60px auto 24px;
+    padding: 40px 0 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+  }
+  .family-divider h2 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .family-divider p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+  }
+  .slide-page {
+    page-break-before: always;
+    break-before: page;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+  }
+  .slide-label {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+  }
+  .slide-label .name {
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .slide-label .meta {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.4);
+  }
+  .slide-wrap {
+    box-shadow: 0 12px 60px rgba(0,0,0,0.4);
+  }
+
+  @media print {
+    @page { size: A4 portrait; margin: 12mm; }
+    html, body { background: #fff !important; }
+    body { padding: 0; color: #000; }
+    .cover-page, .family-divider, .slide-label .name, .slide-label .meta, .slide-label { color: #000 !important; }
+    .cover-page p, .cover-page .meta, .family-divider p { color: rgba(0,0,0,0.6) !important; }
+    .family-divider { border-top-color: rgba(0,0,0,0.15); }
+    .slide-page { min-height: auto; height: auto; padding: 0; page-break-before: always; break-before: page; }
+    .slide-wrap { box-shadow: none; }
+    .slide-wrap, .slide { break-inside: avoid; page-break-inside: avoid; }
+    /* Force colours in slide content */
+    .slide, .slide * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover-page">
+  <h1>Carousel Templates</h1>
+  <p>4 template families × 10 layouts. Each slide is shown at native size (1080 × 1080 square format).</p>
+  <div class="meta">Jonathan Pay × Holistic Email Academy</div>
+</div>
+
+<div id="catalog"></div>
+
+<script src="templates.js"></script>
+<script>
+(function(){
+  const T = window.CarouselTemplates;
+  const catalog = document.getElementById('catalog');
+
+  const FAMILY_DESCRIPTIONS = {
+    'jp-editorial': 'Refined navy and gold. Italic bold headlines, generous whitespace, hairline rules.',
+    'jp-magazine':  'Luxe oversized italic. Caveat script flourishes, dark and cream variants, magazine chrome.',
+    'hea-clean':    'Bright purple system. Polished pills, numbered circles, four colour themes.',
+    'hea-shapes':   'Dark plum base with geometric purple shape overlays. Bold, energetic, modern.',
+  };
+
+  function sampleFields(layout){
+    const f = {};
+    (T.FIELDS[layout] || []).forEach(d => {
+      // Skip photoUrl — render with placeholder
+      if (/url$/i.test(d.id)) f[d.id] = '';
+      else f[d.id] = d.ph || '';
+    });
+    return f;
+  }
+
+  function makeSlide(family, layout, pg, pgTot){
+    const brand = T.FAMILIES[family].brand;
+    return {
+      family, layout,
+      theme: Object.keys(T.THEMES[family])[0],
+      icon: brand === 'hea' && ['tip','quote','cover'].includes(layout) ? 'email.png' : 'none',
+      format: 'square',
+      pg: String(pg).padStart(2,'0'),
+      pgTot: String(pgTot).padStart(2,'0'),
+      handle: brand === 'hea' ? '@holisticemailacademy' : '@jonathanpay',
+      fields: sampleFields(layout),
+    };
+  }
+
+  Object.entries(T.FAMILIES).forEach(([famKey, fam]) => {
+    // Family divider page
+    const div = document.createElement('div');
+    div.className = 'family-divider';
+    div.innerHTML = `<h2>${fam.label}</h2><p>${FAMILY_DESCRIPTIONS[famKey] || fam.subtitle}</p>`;
+    catalog.appendChild(div);
+
+    T.LAYOUTS.forEach((layout, i) => {
+      const page = document.createElement('div');
+      page.className = 'slide-page';
+      const sample = makeSlide(famKey, layout, i+1, T.LAYOUTS.length);
+      page.innerHTML = `
+        <div class="slide-label">
+          <div class="name">${T.LAYOUT_LABELS[layout]}</div>
+          <div class="meta">${fam.label}</div>
+        </div>
+        <div class="slide-wrap">${T.render(sample)}</div>
+      `;
+      catalog.appendChild(page);
+    });
+  });
+
+  // Auto-print after fonts + render settle
+  window.addEventListener('load', () => {
+    if (document.fonts && document.fonts.ready){
+      document.fonts.ready.then(() => {
+        setTimeout(() => window.print(), 500);
+      });
+    } else {
+      setTimeout(() => window.print(), 800);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
