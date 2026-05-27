@@ -107,6 +107,28 @@ body{
   background: rgba(124,92,255,0.08);
 }
 
+.family-card-del{
+  position: absolute; top: 4px; left: 4px;
+  width: 16px; height: 16px;
+  background: rgba(0,0,0,0.6); border: none; border-radius: 50%;
+  color: #ccc; font-size: 11px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  opacity: 0; transition: opacity 0.15s;
+}
+.family-card-custom:hover .family-card-del{ opacity: 1; }
+
+.family-card-import{
+  border-style: dashed;
+  justify-content: center; align-items: center;
+  gap: 6px; color: var(--ui-muted);
+}
+.family-card-import .import-plus{
+  font-size: 22px; line-height: 1; color: var(--ui-faint);
+}
+.family-card-import .label{ color: var(--ui-muted); font-size: 11px; text-align: center; }
+.family-card-import:hover{ border-color: var(--ui-accent); color: var(--ui-text); }
+.family-card-import:hover .import-plus{ color: var(--ui-accent); }
+
 /* Layout picker */
 .layout-grid{
   display: grid;
@@ -523,3 +545,69 @@ textarea{ min-height: 60px; resize: vertical; line-height: 1.5; }
 #toast.show{ opacity: 1; }
 
 #slide-info{ font-size: 11px; color: var(--ui-muted); }
+
+/* ── Import Template Modal ─────────────────────────────────────── */
+#import-modal{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#import-modal.open{ display: flex; }
+
+.import-dialog{
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  width: 560px; max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 60px);
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+.import-header{
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ui-border);
+}
+.import-header h2{ font-size: 14px; font-weight: 700; }
+.import-header button{
+  background: none; border: none; color: var(--ui-muted);
+  font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px;
+}
+.import-header button:hover{ color: var(--ui-text); }
+
+.import-body{
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+}
+
+.import-intro{
+  font-size: 12px; color: var(--ui-muted); line-height: 1.5;
+}
+.import-intro code{
+  background: var(--ui-surface-2); padding: 1px 5px; border-radius: 3px;
+  font-size: 11px; color: var(--ui-text);
+}
+
+#import-json{
+  width: 100%; height: 180px;
+  background: var(--ui-bg); border: 1px solid var(--ui-border);
+  border-radius: 6px; color: var(--ui-text);
+  font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 11px;
+  padding: 12px; resize: vertical; line-height: 1.5;
+}
+#import-json:focus{ outline: none; border-color: var(--ui-accent); }
+
+.import-error{
+  font-size: 12px; color: #e05555; min-height: 16px;
+}
+
+.import-actions{
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.import-actions .btn{ white-space: nowrap; }

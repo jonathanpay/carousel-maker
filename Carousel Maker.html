@@ -105,11 +105,34 @@
   <div class="header">
     <div>
       <h2>Template Library</h2>
-      <div class="sub">4 families × 10 layouts — click any template to insert as a new slide</div>
+      <div class="sub">Browse all families × layouts — click any to insert as a new slide</div>
     </div>
     <button class="btn btn-ghost" id="close-showcase">Close ×</button>
   </div>
   <div class="body" id="showcase-body"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     IMPORT TEMPLATE MODAL
+     ───────────────────────────────────────────────────────── -->
+<div id="import-modal">
+  <div class="import-dialog">
+    <div class="import-header">
+      <h2>Import Template</h2>
+      <button id="close-import">×</button>
+    </div>
+    <div class="import-body">
+      <p class="import-intro">Paste a template JSON below, or upload a <code>.json</code> file. The template will be saved to this browser and appear in the Template Family picker.</p>
+      <textarea id="import-json" placeholder='{"id":"my-brand","label":"My Brand — Clean","subtitle":"Custom colours","handle":"@mybrand","themes":{"primary":{"label":"Primary","swatch":"#2c3d50","bg":"#2c3d50","bgAlt":"#1e2d3d","text":"#ffffff","textMuted":"rgba(255,255,255,0.65)","accent":"#dfb81f","accentText":"#000000","rule":"rgba(255,255,255,0.2)"}}}'></textarea>
+      <p id="import-error" class="import-error"></p>
+      <div class="import-actions">
+        <label class="btn btn-ghost" for="import-file">↑ Upload .json</label>
+        <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+        <button class="btn btn-ghost" id="btn-sample">↓ Download sample</button>
+        <button class="btn btn-primary" id="btn-import-do">Import template</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
