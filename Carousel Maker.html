@@ -11,6 +11,28 @@
 <body>
 
 <!-- ─────────────────────────────────────────────────────────
+     SITE NAV
+     ───────────────────────────────────────────────────────── -->
+<div id="site-nav">
+  <a class="snav-brand" href="https://jonathanpay.github.io">Jonathan Pay</a>
+  <nav class="snav-links">
+    <a href="index.html">All Tools</a>
+    <a href="template-builder.html">Template Builder</a>
+  </nav>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     DRAFT RESTORE BANNER
+     ───────────────────────────────────────────────────────── -->
+<div id="draft-banner" style="display:none">
+  <span>You have unsaved work — <span id="draft-time"></span></span>
+  <div class="draft-actions">
+    <button class="btn btn-ghost btn-sm" onclick="restoreDraft()">Restore draft</button>
+    <button class="draft-dismiss" onclick="dismissDraft()">×</button>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
      SIDEBAR
      ───────────────────────────────────────────────────────── -->
 <aside id="sidebar">
@@ -78,6 +100,12 @@
       <button class="btn btn-ghost" id="btn-browse">⊞ Browse templates</button>
       <button class="btn btn-ghost" id="btn-tweaks">⚙ Tweaks</button>
       <button class="btn btn-ghost" id="btn-duplicate">⎘ Duplicate</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn btn-ghost" id="btn-save-carousel" title="Save carousel to file">↓ Save</button>
+      <button class="btn btn-ghost" id="btn-load-carousel" title="Load carousel from file">↑ Load</button>
+      <button class="btn btn-ghost" id="btn-share-carousel" title="Copy shareable link">🔗 Share</button>
+      <button class="btn btn-ghost" id="btn-new-carousel" title="Start a new carousel">◻ New</button>
+      <div class="toolbar-sep"></div>
       <button class="btn btn-ghost" id="btn-export">↓ PNG</button>
       <button class="btn btn-primary" id="btn-export-all">↓ Export all</button>
     </div>
@@ -105,11 +133,100 @@
   <div class="header">
     <div>
       <h2>Template Library</h2>
-      <div class="sub">4 families × 10 layouts — click any template to insert as a new slide</div>
+      <div class="sub">Browse all families × layouts — click any to insert as a new slide</div>
     </div>
     <button class="btn btn-ghost" id="close-showcase">Close ×</button>
   </div>
   <div class="body" id="showcase-body"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     IMPORT TEMPLATE MODAL
+     ───────────────────────────────────────────────────────── -->
+<div id="import-modal">
+  <div class="import-dialog">
+    <div class="import-header">
+      <h2>Import Template</h2>
+      <button id="close-import">×</button>
+    </div>
+    <div class="import-tabs">
+      <button class="import-tab active" data-tab="build">🎨 Build</button>
+      <button class="import-tab" data-tab="json">{ } JSON</button>
+    </div>
+
+    <!-- Build tab -->
+    <div class="import-tab-body" id="tab-build">
+      <div class="build-grid">
+        <div class="build-field">
+          <label>Brand name</label>
+          <input id="build-label" type="text" placeholder="My Brand — Dark">
+        </div>
+        <div class="build-field">
+          <label>Subtitle <span class="build-opt">optional</span></label>
+          <input id="build-subtitle" type="text" placeholder="Bold and minimal">
+        </div>
+        <div class="build-field">
+          <label>Handle <span class="build-opt">optional</span></label>
+          <input id="build-handle" type="text" placeholder="@mybrand">
+        </div>
+        <div class="build-field">
+          <label>Logo <span class="build-opt">optional</span></label>
+          <div class="logo-row">
+            <label class="btn btn-ghost btn-sm" for="build-logo-file">↑ Upload</label>
+            <input type="file" id="build-logo-file" accept="image/*" style="display:none">
+            <div id="build-logo-preview"></div>
+            <button id="build-logo-clear" style="display:none">✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="build-section-header">
+        <span>Colour themes</span>
+        <button id="btn-add-theme">+ Add theme</button>
+      </div>
+      <div id="build-themes"></div>
+      <p id="build-error" class="import-error"></p>
+      <div class="import-actions">
+        <button class="btn btn-primary" id="btn-build-import">Import template</button>
+      </div>
+    </div>
+
+    <!-- JSON tab -->
+    <div class="import-tab-body" id="tab-json" style="display:none">
+      <p class="import-intro">Paste a template JSON below, or upload a <code>.json</code> file. Saved to this browser.</p>
+      <textarea id="import-json" placeholder='{"id":"my-brand","label":"My Brand — Clean","subtitle":"Custom colours","handle":"@mybrand","themes":{"primary":{"label":"Primary","swatch":"#2c3d50","bg":"#2c3d50","bgAlt":"#1e2d3d","text":"#ffffff","textMuted":"rgba(255,255,255,0.65)","accent":"#dfb81f","accentText":"#000000","rule":"rgba(255,255,255,0.2)"}}}'></textarea>
+      <p id="import-error" class="import-error"></p>
+      <div class="import-actions">
+        <label class="btn btn-ghost" for="import-file">↑ Upload .json</label>
+        <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+        <button class="btn btn-ghost" id="btn-sample">↓ Download sample</button>
+        <button class="btn btn-primary" id="btn-import-do">Import template</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     LOAD CAROUSEL MODAL
+     ───────────────────────────────────────────────────────── -->
+<div id="load-modal">
+  <div class="import-dialog">
+    <div class="import-header">
+      <h2>Load Carousel</h2>
+      <button id="close-load">×</button>
+    </div>
+    <div class="import-tab-body">
+      <p class="import-intro">Upload a <code>.json</code> carousel file, or paste the JSON below.</p>
+      <div class="import-actions" style="margin-bottom:8px">
+        <label class="btn btn-ghost" for="load-file">↑ Upload .json</label>
+        <input type="file" id="load-file" accept=".json,application/json" style="display:none">
+      </div>
+      <textarea id="load-json" placeholder='{"version":1,"slides":[...]}'></textarea>
+      <p id="load-error" class="import-error"></p>
+      <div class="import-actions">
+        <button class="btn btn-primary" id="btn-load-do">Load carousel</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousel Maker — Jonathan Pay</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:  #2c3e50;
+  --gold:  #dfb81f;
+  --bg:    #fafafa;
+  --text:  #2c3e50;
+  --muted: rgba(44,62,80,0.6);
+  --border: #e0e0e0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Open Sans','Helvetica Neue',sans-serif;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+a { color: var(--navy); text-decoration: none; }
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+.site-nav {
+  background: var(--navy);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  flex-shrink: 0;
+}
+.site-nav .brand {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--gold);
+}
+.site-nav .brand:hover { color: #f0ca3a; }
+.nav-links { display: flex; gap: 24px; }
+.nav-links a {
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: #fff; }
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.hero {
+  text-align: center;
+  padding: 64px 24px 48px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.hero h1 {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.hero p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.card:hover {
+  box-shadow: 0 6px 24px rgba(44,62,80,0.1);
+  border-color: #c8c8c8;
+}
+.card-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+.card h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 0;
+}
+.card p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+  flex: 1;
+}
+.card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+  padding: 8px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  align-self: flex-start;
+  transition: background 0.15s, border-color 0.15s;
+}
+.card:hover .card-cta {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+/* ── How it works ────────────────────────────────────────────── */
+.how {
+  background: #fff;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 24px;
+  margin-bottom: 48px;
+}
+.how-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.how h2 {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 28px;
+  text-align: center;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 24px;
+}
+.step { display: flex; flex-direction: column; gap: 8px; }
+.step-num {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+.step h3 { font-size: 14px; font-weight: 700; color: var(--navy); }
+.step p  { font-size: 13px; line-height: 1.55; color: var(--muted); }
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer {
+  margin-top: auto;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+footer a { color: var(--muted); }
+footer a:hover { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="brand" href="https://jonathanpay.github.io">Jonathan Pay</a>
+  <div class="nav-links">
+    <a href="https://jonathanpay.github.io/#projects">Projects</a>
+    <a href="https://jonathanpay.github.io/about.html">About</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">Free tools</div>
+  <h1>Carousel Maker</h1>
+  <p>Build beautiful, on-brand LinkedIn carousels — no design software required. Use a built-in template or create your own.</p>
+</div>
+
+<div class="cards">
+  <a class="card" href="Carousel Maker.html">
+    <span class="card-tag">Main tool</span>
+    <h2>Carousel Maker</h2>
+    <p>Create multi-slide carousels with JP or HEA brand templates — or import your own. Set layouts, colours and content, then export to PNG.</p>
+    <span class="card-cta">Open →</span>
+  </a>
+  <a class="card" href="template-builder.html">
+    <span class="card-tag">Template creator</span>
+    <h2>Template Builder</h2>
+    <p>Design your own brand template with custom colours and logo. See all nine slide layouts update live as you build, then download your JSON.</p>
+    <span class="card-cta">Build a template →</span>
+  </a>
+</div>
+
+<div class="how">
+  <div class="how-inner">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Pick a template</h3>
+        <p>Choose JP, HEA, or build your own brand template with the Template Builder.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Add your slides</h3>
+        <p>Pick layouts — Cover, Stat, Tip, List, Quote and more — and fill in your content.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Export as PNG</h3>
+        <p>Download individual slides or the whole carousel in one click. Ready to post.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://jonathanpay.github.io">← jonathanpay.github.io</a>
+</footer>
+
+</body>
+</html>

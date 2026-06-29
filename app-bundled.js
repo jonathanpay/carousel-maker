@@ -17,15 +17,17 @@ function defaultsFor(family, layout, idx){
     if (/url$/i.test(def.id)) fields[def.id] = '';
     else fields[def.id] = def.ph || '';
   });
-  const brand = T.FAMILIES[family].brand;
+  const fam = T.FAMILIES[family] || T.FAMILIES['jp-editorial'];
+  const brand = fam.brand;
+  const handle = fam._handle || (brand === 'hea' ? DEFAULT_HANDLE_HEA : DEFAULT_HANDLE_JP);
   return {
     family, layout,
-    theme: Object.keys(T.THEMES[family])[0],
+    theme: Object.keys(T.THEMES[family] || T.THEMES['jp-editorial'])[0],
     icon: 'none',
     format: state?.format || 'square',
     pg: String(idx).padStart(2,'0'),
     pgTot: String(Math.max(idx, 1)).padStart(2,'0'),
-    handle: brand === 'hea' ? DEFAULT_HANDLE_HEA : DEFAULT_HANDLE_JP,
+    handle,
     fields,
   };
 }
@@ -69,6 +71,8 @@ const LAYOUT_ICONS = {
 
 // ── Init ───────────────────────────────────────────────────────────
 function init(){
+  loadCustomTemplates(); // must be before buildFamilyPicker
+  checkUrlOrDraft();     // restore shared/draft carousel before first render
   buildFamilyPicker();
   buildLayoutPicker();
   buildIconGrid();
@@ -78,7 +82,6 @@ function init(){
   renderTray();
   renderCanvas();
   setupShowcase();
-  // Edit mode protocol
   setupEditMode();
 }
 
@@ -88,17 +91,28 @@ function buildFamilyPicker(){
   wrap.innerHTML = '';
   Object.entries(T.FAMILIES).forEach(([key, fam]) => {
     const btn = document.createElement('button');
-    btn.className = 'family-card';
+    btn.className = 'family-card' + (fam._custom ? ' family-card-custom' : '');
     btn.dataset.family = key;
     btn.onclick = () => setFamily(key);
-    const swatchColor = T.THEMES[key][Object.keys(T.THEMES[key])[0]].swatch;
+    const themes = T.THEMES[key] || {};
+    const swatchColor = themes[Object.keys(themes)[0]]?.swatch || '#888';
+    const deleteBtn = fam._custom
+      ? `<button class="family-card-del" title="Delete template" onclick="event.stopPropagation();deleteCustomTemplate('${key}')">×</button>`
+      : '';
     btn.innerHTML = `
       <div class="swatch" style="background:${swatchColor}"></div>
       <div class="label">${fam.label}</div>
       <div class="subtitle">${fam.subtitle}</div>
+      ${deleteBtn}
     `;
     wrap.appendChild(btn);
   });
+  // "Import template" card
+  const addBtn = document.createElement('button');
+  addBtn.className = 'family-card family-card-import';
+  addBtn.onclick = openImportModal;
+  addBtn.innerHTML = `<div class="import-plus">+</div><div class="label">Import template</div>`;
+  wrap.appendChild(addBtn);
 }
 
 // ── Sidebar: layout picker ─────────────────────────────────────────
@@ -271,16 +285,15 @@ function applyTweaks(){
 function setFamily(key){
   const slide = state.slides[state.currentIdx];
   slide.family = key;
-  // Reset theme to family default
-  slide.theme = Object.keys(T.THEMES[key])[0];
-  // Update default handle if user hasn't customised
-  const brand = T.FAMILIES[key].brand;
+  const fam = T.FAMILIES[key] || {};
+  const brand = fam.brand;
+  slide.theme = Object.keys(T.THEMES[key] || {})[0] || 'navy';
+  // Update handle if it's still at a known default
   if (slide.handle === DEFAULT_HANDLE_JP || slide.handle === DEFAULT_HANDLE_HEA){
-    slide.handle = brand === 'hea' ? DEFAULT_HANDLE_HEA : DEFAULT_HANDLE_JP;
+    slide.handle = fam._handle || (brand === 'hea' ? DEFAULT_HANDLE_HEA : DEFAULT_HANDLE_JP);
     $('#fld-handle').value = slide.handle;
   }
-  // Reset icon if switching to JP (no icons)
-  if (brand === 'jp') slide.icon = 'none';
+  if (brand !== 'hea') slide.icon = 'none';
   reflectSidebar();
   renderCanvas();
   refreshThumb(state.currentIdx);
@@ -331,7 +344,7 @@ function reflectSidebar(){
   $$('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout === slide.layout));
   buildThemePicker();
   $$('.icon-opt').forEach(el => el.classList.toggle('selected', el.dataset.icon === slide.icon));
-  const brand = T.FAMILIES[slide.family].brand;
+  const brand = (T.FAMILIES[slide.family] || {}).brand;
   $('#icon-section').style.display = brand === 'hea' ? '' : 'none';
   renderFields();
   setupGlobals();
@@ -353,6 +366,7 @@ function renderCanvas(){
   const slideEl = wrap.querySelector('.slide');
   if (slideEl) updateCanvasSize();
   updateSlideInfo();
+  debouncePersistDraft();
 }
 
 function applyRenderTweaks(slide){
@@ -610,6 +624,399 @@ function toast(msg){
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ── Custom template persistence ───────────────────────────────────
+const STORAGE_KEY = 'carouselMaker_customTemplates';
+
+function saveCustomTemplates(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(T.getCustomFamilies()));
+  } catch(e) {}
+}
+
+function loadCustomTemplates(){
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    stored.forEach(cfg => {
+      try { T.registerCustomFamily(cfg); } catch(e) {}
+    });
+  } catch(e) {}
+}
+
+// ── Colour utilities ──────────────────────────────────────────────
+const escAttr = s => String(s ?? '').replace(/[&"<>]/g, c => ({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'})[c]);
+
+function hexToRgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function hexToRgba(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function darkenHex(hex, amount) {
+  let { r, g, b } = hexToRgb(hex);
+  return '#' + [r,g,b].map(x => Math.max(0, Math.round(x*(1-amount))).toString(16).padStart(2,'0')).join('');
+}
+function contrastColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.299*r + 0.587*g + 0.114*b) > 140 ? '#000000' : '#ffffff';
+}
+
+// ── Custom template management ────────────────────────────────────
+window.deleteCustomTemplate = function(id){
+  if (!confirm('Remove this template from your library?')) return;
+  const slide = state.slides[state.currentIdx];
+  if (slide.family === id) setFamily('jp-editorial');
+  T.removeCustomFamily(id);
+  saveCustomTemplates();
+  buildFamilyPicker();
+  reflectSidebar();
+  toast('Template removed');
+};
+
+// ── Build form ────────────────────────────────────────────────────
+let _buildLogo = '';
+
+function switchImportTab(tab) {
+  $$('.import-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  $('#tab-build').style.display = tab === 'build' ? '' : 'none';
+  $('#tab-json').style.display  = tab === 'json'  ? '' : 'none';
+}
+
+function initBuildForm() {
+  _buildLogo = '';
+  $('#build-logo-preview').innerHTML = '';
+  $('#build-logo-clear').style.display = 'none';
+  $('#build-label').value    = '';
+  $('#build-subtitle').value = '';
+  $('#build-handle').value   = '';
+  $('#build-error').textContent = '';
+  $('#build-themes').innerHTML = '';
+  addBuildTheme({ name: 'Dark',  bg: '#1e2235', accent: '#7c5cff', text: '#ffffff' });
+  addBuildTheme({ name: 'Light', bg: '#ffffff',  accent: '#7c5cff', text: '#1a1a2e' });
+}
+
+function addBuildTheme(defaults) {
+  const idx = $('#build-themes').querySelectorAll('.build-theme-row').length;
+  const d = defaults || { name: 'Theme ' + (idx+1), bg: '#2c3d50', accent: '#dfb81f', text: '#ffffff' };
+  const row = document.createElement('div');
+  row.className = 'build-theme-row';
+  row.dataset.themeIdx = idx;
+  row.innerHTML = `
+    <div class="theme-row-header">
+      <input class="build-theme-name" type="text" value="${escAttr(d.name)}" placeholder="Theme name">
+      <button class="theme-row-del" title="Remove">×</button>
+    </div>
+    <div class="theme-colours">
+      <div class="colour-row"><label>Background</label><div class="colour-input-wrap"><input type="color" data-key="bg" value="${d.bg}"><span class="colour-hex">${d.bg}</span></div></div>
+      <div class="colour-row"><label>Accent</label><div class="colour-input-wrap"><input type="color" data-key="accent" value="${d.accent}"><span class="colour-hex">${d.accent}</span></div></div>
+      <div class="colour-row"><label>Text</label><div class="colour-input-wrap"><input type="color" data-key="text" value="${d.text}"><span class="colour-hex">${d.text}</span></div></div>
+    </div>
+  `;
+  row.querySelector('.theme-row-del').onclick = () => {
+    row.remove();
+    $$('.build-theme-row').forEach((r,i) => r.dataset.themeIdx = i);
+  };
+  row.querySelectorAll('input[type="color"]').forEach(inp => {
+    inp.oninput = () => inp.nextElementSibling.textContent = inp.value;
+  });
+  $('#build-themes').appendChild(row);
+}
+
+function buildTemplateFromForm() {
+  const label = $('#build-label').value.trim();
+  if (!label) { $('#build-error').textContent = 'Enter a brand name.'; return null; }
+  const themeRows = [...$$('.build-theme-row')];
+  if (!themeRows.length) { $('#build-error').textContent = 'Add at least one colour theme.'; return null; }
+
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'custom';
+  const themes = {};
+  themeRows.forEach(row => {
+    const name    = row.querySelector('.build-theme-name').value.trim() || 'Theme';
+    const bg      = row.querySelector('[data-key="bg"]').value;
+    const accent  = row.querySelector('[data-key="accent"]').value;
+    const text    = row.querySelector('[data-key="text"]').value;
+    const themeId = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'theme';
+    themes[themeId] = {
+      label: name, swatch: bg, bg,
+      bgAlt:      darkenHex(bg, 0.12),
+      text,
+      textMuted:  hexToRgba(text, 0.6),
+      accent,
+      accentText: contrastColor(accent),
+      rule:       hexToRgba(text, 0.18),
+    };
+  });
+
+  return {
+    id,
+    label,
+    subtitle: $('#build-subtitle').value.trim() || 'Custom template',
+    handle:   $('#build-handle').value.trim(),
+    logo:     _buildLogo,
+    themes,
+  };
+}
+
+window.clearBuildLogo = function() {
+  _buildLogo = '';
+  $('#build-logo-preview').innerHTML = '';
+  $('#build-logo-clear').style.display = 'none';
+};
+
+function openImportModal(){
+  $('#import-modal').classList.add('open');
+  $('#import-json').value = '';
+  $('#import-error').textContent = '';
+  initBuildForm();
+  switchImportTab('build');
+}
+
+function closeImportModal(){
+  $('#import-modal').classList.remove('open');
+}
+
+function doImportTemplate(){
+  const raw = $('#import-json').value.trim();
+  if (!raw) { $('#import-error').textContent = 'Paste your template JSON above.'; return; }
+  let cfg;
+  try { cfg = JSON.parse(raw); } catch(e) {
+    $('#import-error').textContent = 'Invalid JSON — check for missing quotes or commas.';
+    return;
+  }
+  try {
+    const id = T.registerCustomFamily(cfg);
+    saveCustomTemplates();
+    buildFamilyPicker();
+    closeImportModal();
+    setFamily(id);
+    toast(`"${cfg.label}" added to your library`);
+  } catch(e) {
+    $('#import-error').textContent = e.message;
+  }
+}
+
+function downloadSampleTemplate(){
+  const sample = {
+    id: 'my-brand',
+    label: 'My Brand — Clean',
+    subtitle: 'Custom colour palette',
+    handle: '@mybrand',
+    logo: '',
+    logoStyle: 'height:40px;max-width:150px;object-fit:contain',
+    fonts: {
+      headingFamily: "'Inter','Helvetica Neue',sans-serif",
+      bodyFamily: "'Inter','Helvetica Neue',sans-serif",
+      googleFonts: ''
+    },
+    themes: {
+      primary: {
+        label: 'Primary',
+        swatch: '#2c3d50',
+        bg: '#2c3d50',
+        bgAlt: '#1e2d3d',
+        text: '#ffffff',
+        textMuted: 'rgba(255,255,255,0.65)',
+        accent: '#dfb81f',
+        accentText: '#000000',
+        rule: 'rgba(255,255,255,0.2)'
+      },
+      light: {
+        label: 'Light',
+        swatch: '#ffffff',
+        bg: '#ffffff',
+        bgAlt: '#f4f4f6',
+        text: '#1a1a2e',
+        textMuted: 'rgba(0,0,0,0.55)',
+        accent: '#2c3d50',
+        accentText: '#ffffff',
+        rule: 'rgba(0,0,0,0.12)'
+      }
+    }
+  };
+  const blob = new Blob([JSON.stringify(sample, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'carousel-template-sample.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportCustomTemplate(id){
+  const cfg = T.getCustomFamilies().find(c => c.id === id);
+  if (!cfg) return;
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = `carousel-template-${id}.json`;
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Project: save / load / share / draft ─────────────────────────
+const DRAFT_KEY = 'carouselMaker_draft';
+
+let _draftTimer;
+function debouncePersistDraft(){
+  clearTimeout(_draftTimer);
+  _draftTimer = setTimeout(persistDraft, 700);
+}
+
+function persistDraft(){
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      version: 1, savedAt: Date.now(),
+      format: state.format, tweaks: state.tweaks,
+      slides: state.slides, currentIdx: state.currentIdx,
+    }));
+  } catch(e){}
+}
+
+function relTime(ts){
+  const d = Date.now() - ts;
+  if (d < 90000)   return 'just now';
+  if (d < 3600000) return Math.round(d/60000) + 'm ago';
+  if (d < 86400000)return Math.round(d/3600000) + 'h ago';
+  return Math.round(d/86400000) + 'd ago';
+}
+
+function checkUrlOrDraft(){
+  if (location.hash.startsWith('#c=')){
+    try {
+      const data = JSON.parse(_fromBase64(location.hash.slice(3)));
+      history.replaceState(null, '', location.pathname + location.search);
+      _applyCarouselData(data, true);
+      // banner not needed — URL load is intentional
+    } catch(e){ console.warn('URL decode failed:', e); }
+    return;
+  }
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft.slides || !draft.slides.length) return;
+    const banner = $('#draft-banner');
+    if (banner){
+      $('#draft-time').textContent = draft.savedAt ? relTime(draft.savedAt) : '';
+      banner.style.display = 'flex';
+      document.body.classList.add('has-banner');
+      window._pendingDraft = draft;
+    }
+  } catch(e){}
+}
+
+window.dismissDraft = function(){
+  $('#draft-banner').style.display = 'none';
+  document.body.classList.remove('has-banner');
+  localStorage.removeItem(DRAFT_KEY);
+};
+
+window.restoreDraft = function(){
+  if (!window._pendingDraft) return;
+  _applyCarouselData(window._pendingDraft);
+  buildFamilyPicker();
+  $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === state.format));
+  applyTweaks();
+  reflectSidebar();
+  renderTray();
+  renderCanvas();
+  $('#draft-banner').style.display = 'none';
+  document.body.classList.remove('has-banner');
+  toast('Draft restored');
+};
+
+function _applyCarouselData(data, quiet){
+  if (!data || !data.slides || !data.slides.length) return;
+  if (data.customTemplates){
+    data.customTemplates.forEach(cfg => {
+      if (!T.FAMILIES[cfg.id]) try { T.registerCustomFamily(cfg); } catch(e){}
+    });
+    saveCustomTemplates();
+  }
+  state.slides = data.slides;
+  state.format = data.format || 'square';
+  state.currentIdx = Math.min(data.currentIdx || 0, data.slides.length - 1);
+  if (data.tweaks) state.tweaks = { ...TWEAKS_DEFAULTS, ...data.tweaks };
+}
+
+function saveCarousel(){
+  const usedCustom = T.getCustomFamilies()
+    .filter(cfg => state.slides.some(s => s.family === cfg.id));
+  const data = {
+    version: 1, format: state.format,
+    tweaks: state.tweaks, slides: state.slides,
+    ...(usedCustom.length ? { customTemplates: usedCustom } : {}),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'carousel.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Carousel saved');
+}
+
+function _toBase64(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p) => String.fromCharCode(parseInt(p, 16))));
+}
+function _fromBase64(str){
+  return decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join(''));
+}
+
+function shareCarousel(){
+  const usedCustom = T.getCustomFamilies()
+    .filter(cfg => state.slides.some(s => s.family === cfg.id))
+    .map(cfg => ({ ...cfg, logo: '' })); // strip logos to keep URL short
+  const data = {
+    version: 1, format: state.format, tweaks: state.tweaks, slides: state.slides,
+    ...(usedCustom.length ? { customTemplates: usedCustom } : {}),
+  };
+  const encoded = _toBase64(JSON.stringify(data));
+  if (encoded.length > 20000){
+    toast('Carousel too large for a link — use ↓ Save instead');
+    return;
+  }
+  const url = location.origin + location.pathname + '#c=' + encoded;
+  navigator.clipboard.writeText(url)
+    .then(() => toast('Share link copied to clipboard'))
+    .catch(() => prompt('Copy this link:', url));
+}
+
+// ── Load carousel modal ───────────────────────────────────────────
+function openLoadModal(){
+  $('#load-modal').classList.add('open');
+  $('#load-json').value = '';
+  $('#load-error').textContent = '';
+}
+
+function closeLoadModal(){
+  $('#load-modal').classList.remove('open');
+}
+
+function doLoadCarousel(){
+  const raw = $('#load-json').value.trim();
+  if (!raw){ $('#load-error').textContent = 'Paste carousel JSON or upload a file.'; return; }
+  let data;
+  try { data = JSON.parse(raw); } catch(e){
+    $('#load-error').textContent = 'Invalid JSON — check for missing quotes or commas.';
+    return;
+  }
+  if (!data.slides || !data.slides.length){
+    $('#load-error').textContent = 'No slides found. Is this a carousel file?';
+    return;
+  }
+  _applyCarouselData(data);
+  buildFamilyPicker();
+  $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === state.format));
+  applyTweaks();
+  reflectSidebar();
+  renderTray();
+  renderCanvas();
+  closeLoadModal();
+  persistDraft();
+  toast('Carousel loaded — ' + data.slides.length + ' slides');
+}
+
 // ── Wire toolbar buttons ──────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   init();
@@ -628,6 +1035,86 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#close-tweaks').onclick = () => {
     $('#tweaks').classList.remove('open');
     try { window.parent.postMessage({type:'__edit_mode_dismissed'}, '*'); } catch(e){}
+  };
+
+  // Import modal — tabs
+  $$('.import-tab').forEach(t => t.onclick = () => switchImportTab(t.dataset.tab));
+
+  // Build tab
+  $('#btn-add-theme').onclick = () => addBuildTheme();
+  $('#btn-build-import').onclick = () => {
+    $('#build-error').textContent = '';
+    const cfg = buildTemplateFromForm();
+    if (!cfg) return;
+    try {
+      const id = T.registerCustomFamily(cfg);
+      saveCustomTemplates();
+      buildFamilyPicker();
+      closeImportModal();
+      setFamily(id);
+      toast(`"${cfg.label}" added to your library`);
+    } catch(e) { $('#build-error').textContent = e.message; }
+  };
+  $('#build-logo-file').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      _buildLogo = ev.target.result;
+      $('#build-logo-preview').innerHTML = `<img src="${_buildLogo}" alt="logo">`;
+      $('#build-logo-clear').style.display = '';
+    };
+    reader.readAsDataURL(file);
+  };
+  $('#build-logo-clear').onclick = clearBuildLogo;
+
+  // JSON tab
+  $('#close-import').onclick = closeImportModal;
+  $('#btn-import-do').onclick = doImportTemplate;
+  $('#btn-sample').onclick = downloadSampleTemplate;
+  $('#import-file').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { $('#import-json').value = ev.target.result; $('#import-error').textContent = ''; };
+    reader.readAsText(file);
+  };
+
+  $('#import-modal').addEventListener('click', e => {
+    if (e.target === $('#import-modal')) closeImportModal();
+  });
+
+  // Project: save / load / share
+  $('#btn-save-carousel').onclick  = saveCarousel;
+  $('#btn-share-carousel').onclick = shareCarousel;
+  $('#btn-load-carousel').onclick  = openLoadModal;
+  $('#close-load').onclick         = closeLoadModal;
+  $('#btn-load-do').onclick        = doLoadCarousel;
+  $('#load-file').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { $('#load-json').value = ev.target.result; $('#load-error').textContent = ''; };
+    reader.readAsText(file);
+  };
+  $('#load-modal').addEventListener('click', e => {
+    if (e.target === $('#load-modal')) closeLoadModal();
+  });
+  $('#btn-new-carousel').onclick = () => {
+    if (!confirm('Start a new carousel? Your current work will be replaced.')) return;
+    state.slides = [defaultsFor('jp-editorial','cover',1)];
+    state.slides[0].pgTot = '01';
+    state.currentIdx = 0;
+    state.format = 'square';
+    state.tweaks = { ...TWEAKS_DEFAULTS };
+    $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === 'square'));
+    buildTweaksPanel();
+    applyTweaks();
+    reflectSidebar();
+    renderTray();
+    renderCanvas();
+    persistDraft();
+    toast('New carousel started');
   };
 
   // Format toggle
