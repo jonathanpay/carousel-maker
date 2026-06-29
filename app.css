@@ -292,6 +292,34 @@ body.has-banner #main { padding-top: 37px; }
 }
 .draft-dismiss:hover{ color: #a8e09a; }
 
+/* ── Site navigation strip ──────────────────────────────────────── */
+#site-nav{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 32px;
+  background: #2c3e50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 40;
+  font-family: 'Open Sans','Inter',sans-serif;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.snav-brand{ font-weight: 700; color: #dfb81f; text-decoration: none; }
+.snav-brand:hover{ color: #f0ca3a; }
+.snav-links{ display: flex; gap: 16px; }
+.snav-links a{ color: rgba(255,255,255,0.7); text-decoration: none; }
+.snav-links a:hover{ color: #fff; }
+
+/* Push app content below site nav */
+#sidebar, #main{ padding-top: 32px; }
+/* Draft banner stacks immediately below site nav */
+#draft-banner{ top: 32px; }
+body.has-banner #sidebar,
+body.has-banner #main{ padding-top: calc(32px + 37px); }
+
 /* ── Toolbar separator ───────────────────────────────────────────── */
 .toolbar-sep{
   width: 1px; height: 18px;

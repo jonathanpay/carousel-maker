@@ -19,10 +19,30 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; padding-top: 32px; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 input, textarea, select, button { font-family: inherit; font-size: inherit; }
+
+/* ── Site nav strip ──────────────────────────────────────────── */
+#site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 32px;
+  background: #2c3e50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  font-family: 'Open Sans','Helvetica Neue',sans-serif;
+  font-size: 12px;
+}
+.snav-brand { font-weight: 700; color: #dfb81f; text-decoration: none; }
+.snav-brand:hover { color: #f0ca3a; text-decoration: none; }
+.snav-links { display: flex; gap: 16px; }
+.snav-links a { color: rgba(255,255,255,0.7); text-decoration: none; }
+.snav-links a:hover { color: #fff; text-decoration: none; }
 
 .tb-page { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
 
@@ -31,19 +51,9 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   padding: 28px 0 24px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 32px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
 }
 .tb-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
 .tb-header p  { color: var(--muted); font-size: 13px; margin-top: 4px; }
-.tb-back {
-  font-size: 13px; color: var(--muted);
-  display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 4px; white-space: nowrap;
-}
-.tb-back:hover { color: var(--text); text-decoration: none; }
 
 /* ── Two-column layout ───────────────────────────────────────── */
 .tb-layout {
@@ -227,14 +237,20 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 </style>
 </head>
 <body>
+
+<div id="site-nav">
+  <a class="snav-brand" href="https://jonathanpay.github.io">Jonathan Pay</a>
+  <nav class="snav-links">
+    <a href="index.html">All Tools</a>
+    <a href="Carousel Maker.html">Carousel Maker</a>
+  </nav>
+</div>
+
 <div class="tb-page">
 
   <header class="tb-header">
-    <div>
-      <h1>Template Builder</h1>
-      <p>Design a custom brand template for the Carousel Maker</p>
-    </div>
-    <a class="tb-back" href="Carousel Maker.html">← Carousel Maker</a>
+    <h1>Template Builder</h1>
+    <p>Design a custom brand template for the Carousel Maker</p>
   </header>
 
   <div class="tb-layout">
