@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Template Builder — Carousel Maker</title>
+<link rel="stylesheet" href="templates.css">
+<style>
+:root {
+  --bg: #16171a;
+  --surface: #1e2025;
+  --surface2: #252830;
+  --border: rgba(255,255,255,0.09);
+  --text: #e0e1e6;
+  --muted: rgba(255,255,255,0.45);
+  --accent: #7c5cff;
+  --radius: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+input, textarea, select, button { font-family: inherit; font-size: inherit; }
+
+.tb-page { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+.tb-header {
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.tb-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.tb-header p  { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.tb-back {
+  font-size: 13px; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 4px; white-space: nowrap;
+}
+.tb-back:hover { color: var(--text); text-decoration: none; }
+
+/* ── Two-column layout ───────────────────────────────────────── */
+.tb-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .tb-layout { grid-template-columns: 1fr; }
+  .tb-right   { position: static !important; }
+}
+
+/* ── Form column ─────────────────────────────────────────────── */
+.tb-form { display: flex; flex-direction: column; gap: 20px; }
+
+.tb-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.tb-card-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
+}
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.field input[type="text"] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.field input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.opt { opacity: 0.5; font-weight: 400; }
+
+/* Logo row */
+.logo-row { display: flex; align-items: center; gap: 8px; }
+.logo-thumb {
+  width: 36px; height: 36px; border-radius: 5px;
+  background: var(--surface2); border: 1px solid var(--border);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.btn-logo-clear {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 2px 5px;
+}
+.btn-logo-clear:hover { color: var(--text); }
+
+/* Themes section */
+.themes-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.themes-header span {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.theme-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.theme-row-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.theme-name-input {
+  background: none; border: none; color: var(--text); font-weight: 600;
+  font-size: 13px; flex: 1; padding: 0;
+}
+.theme-name-input:focus { outline: none; }
+.btn-del-theme {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 17px; line-height: 1; padding: 2px 4px;
+}
+.btn-del-theme:hover { color: #ff6b6b; }
+.colour-rows { display: flex; flex-direction: column; gap: 6px; }
+.colour-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.colour-row label { font-size: 12px; color: var(--muted); flex: 1; }
+.colour-swatch-wrap { display: flex; align-items: center; gap: 6px; }
+.colour-swatch-wrap input[type="color"] {
+  width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border);
+  padding: 1px; background: transparent; cursor: pointer;
+}
+.colour-hex { font-size: 12px; color: var(--muted); font-family: monospace; width: 58px; }
+
+.themes-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+  white-space: nowrap; text-decoration: none;
+}
+.btn-ghost {
+  background: transparent; border-color: var(--border); color: var(--text);
+}
+.btn-ghost:hover { background: var(--surface2); text-decoration: none; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { opacity: 0.88; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+
+/* ── Right column ────────────────────────────────────────────── */
+.tb-right { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Preview card */
+.preview-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+.preview-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 10px;
+  flex-wrap: wrap;
+}
+.layout-tabs  { display: flex; gap: 4px; flex-wrap: wrap; }
+.layout-tab {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); font-size: 11px; font-weight: 600; padding: 3px 8px;
+  cursor: pointer; transition: all 0.12s; letter-spacing: 0.04em;
+}
+.layout-tab.active  { background: var(--accent); border-color: var(--accent); color: #fff; }
+.layout-tab:hover:not(.active) { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.theme-dots { display: flex; gap: 7px; align-items: center; }
+.theme-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.theme-dot.active { border-color: #fff; transform: scale(1.25); }
+.theme-dot:hover:not(.active) { transform: scale(1.12); }
+
+.preview-slot { padding: 16px; }
+.preview-slide-wrap {
+  position: relative; overflow: hidden; margin: 0 auto;
+}
+#preview-inner { transform-origin: top left; width: 540px; }
+#preview-inner .slide { width: 540px !important; height: 540px !important; }
+
+/* JSON card */
+.json-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.json-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.json-card-header span {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+#json-out {
+  font-family: 'Menlo', 'Consolas', monospace; font-size: 10px; line-height: 1.55;
+  color: var(--text); background: transparent;
+  padding: 12px 14px; margin: 0; white-space: pre;
+  overflow-x: auto; max-height: 200px; overflow-y: auto;
+  display: block;
+}
+
+/* Actions */
+.tb-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tb-hint {
+  font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 2px;
+}
+</style>
+</head>
+<body>
+<div class="tb-page">
+
+  <header class="tb-header">
+    <div>
+      <h1>Template Builder</h1>
+      <p>Design a custom brand template for the Carousel Maker</p>
+    </div>
+    <a class="tb-back" href="Carousel Maker.html">← Carousel Maker</a>
+  </header>
+
+  <div class="tb-layout">
+
+    <!-- ── Left: Form ─────────────────────────────────────────── -->
+    <div class="tb-form">
+
+      <div class="tb-card">
+        <div class="tb-card-title">Brand</div>
+
+        <div class="field">
+          <label>Brand name <span style="color:#ff6b6b;font-weight:700">*</span></label>
+          <input type="text" id="fld-label" placeholder="e.g. Acme Co — Bold">
+        </div>
+        <div class="field">
+          <label>Subtitle <span class="opt">optional</span></label>
+          <input type="text" id="fld-subtitle" placeholder="Brief description of this template">
+        </div>
+        <div class="field">
+          <label>Handle <span class="opt">optional</span></label>
+          <input type="text" id="fld-handle" placeholder="@yourhandle">
+        </div>
+        <div class="field">
+          <label>Logo <span class="opt">optional</span></label>
+          <div class="logo-row">
+            <label class="btn btn-ghost btn-sm" for="logo-file" style="cursor:pointer">↑ Upload</label>
+            <input type="file" id="logo-file" accept="image/*" style="display:none">
+            <div class="logo-thumb" id="logo-thumb"></div>
+            <button class="btn-logo-clear" id="logo-clear" style="display:none" title="Remove logo">×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tb-card">
+        <div class="themes-header">
+          <span>Colour themes</span>
+          <button class="btn btn-ghost btn-sm" id="btn-add-theme">+ Add theme</button>
+        </div>
+        <div id="theme-rows"></div>
+        <p class="themes-note">Three inputs per theme — shades, muted text, and border colours are auto-generated.</p>
+      </div>
+
+    </div>
+
+    <!-- ── Right: Preview + output ──────────────────────────── -->
+    <div class="tb-right">
+
+      <div class="preview-card">
+        <div class="preview-controls">
+          <div class="layout-tabs" id="layout-tabs"></div>
+          <div class="theme-dots" id="theme-dots"></div>
+        </div>
+        <div class="preview-slot">
+          <div class="preview-slide-wrap" id="preview-wrap">
+            <div id="preview-inner"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="json-card">
+        <div class="json-card-header">
+          <span>Template JSON</span>
+          <button class="btn btn-ghost btn-sm" id="btn-copy-json">Copy</button>
+        </div>
+        <pre id="json-out"></pre>
+      </div>
+
+      <div>
+        <div class="tb-actions">
+          <button class="btn btn-primary" id="btn-download">↓ Download template.json</button>
+          <a class="btn btn-ghost" href="Carousel Maker.html" target="_blank">Open Carousel Maker →</a>
+        </div>
+        <p class="tb-hint" style="margin-top:10px">
+          In the Carousel Maker, click <strong>+ Import template</strong> in the Template Family section and paste or upload your JSON.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="templates.js"></script>
+<script>
+const T = window.CarouselTemplates;
+const $ = id => document.getElementById(id);
+const escAttr = s => String(s ?? '').replace(/[&"<>]/g, c =>
+  ({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'})[c]);
+
+// ── Colour helpers ───────────────────────────────────────────────
+function hexToRgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function hexToRgba(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function darkenHex(hex, amount) {
+  const { r, g, b } = hexToRgb(hex);
+  return '#' + [r,g,b].map(x =>
+    Math.max(0, Math.round(x*(1-amount))).toString(16).padStart(2,'0')).join('');
+}
+function contrastColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.299*r + 0.587*g + 0.114*b) > 140 ? '#000000' : '#ffffff';
+}
+
+// ── State ────────────────────────────────────────────────────────
+let _logo         = '';
+let _activeLayout = 'cover';
+let _activeTheme  = '';
+const PREVIEW_ID  = 'tb-preview';
+
+// ── Sample content (layout → fields) ────────────────────────────
+function sampleFields(layout) {
+  const brand  = $('fld-label').value.trim() || 'Your Brand';
+  const handle = $('fld-handle').value.trim() || '@yourbrand';
+  const samples = {
+    cover:   { eyebrow: 'CAROUSEL TEMPLATE', headline: `*${brand}*, your brand`, sub: 'Beautiful slides in minutes' },
+    stat:    { number: '10×', label: `faster with *${brand}*`, body: 'Build on-brand carousels every time.' },
+    tip:     { step: '1', kicker: 'PRO TIP', headline: 'Define your colours *once*, use everywhere', body: 'Your brand, consistently applied across every slide.' },
+    list:    { headline: 'Why *custom* templates matter', item1: 'Consistent brand across posts', item2: 'Save hours on every carousel', item3: 'Stand out in the feed', item4: 'Earn trust through consistency' },
+    quote:   { quote: `"Great design is *invisible* — your audience just feels the trust"`, attr: `— ${brand}` },
+    compare: { headline: 'Before *vs* After', dontTitle: "Without", dontBody: 'Generic slides. No brand. Forgettable.', doTitle: 'With', doBody: `${brand} templates — recognisable and polished.` },
+    cta:     { pre: 'READY TO START?', headline: `Follow *${brand}* today`, pill: 'Follow →' },
+    case:    { headline: 'A real-world *result*', p1: 'Started with no brand consistency.', p2: `Implemented ${brand} templates.`, p3: '3× increase in profile visits in 30 days.' },
+    author:  { role: 'FOUNDER', name: brand, bio: 'Helping creators build consistent, professional brands on social.', handles: handle },
+    image:   { eyebrow: 'CASE STUDY', headline: `Built with *${brand}*`, body: 'Real results from a real brand.' },
+  };
+  return samples[layout] || {};
+}
+
+// ── Build config from form ───────────────────────────────────────
+function buildCfg() {
+  const label = $('fld-label').value.trim();
+  if (!label) return null;
+
+  const rows = document.querySelectorAll('.theme-row');
+  if (!rows.length) return null;
+
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'custom';
+  const themes = {};
+  rows.forEach(row => {
+    const name    = row.querySelector('.theme-name-input').value.trim() || 'Theme';
+    const bg      = row.querySelector('[data-key="bg"]').value;
+    const accent  = row.querySelector('[data-key="accent"]').value;
+    const text    = row.querySelector('[data-key="text"]').value;
+    const themeId = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'theme';
+    themes[themeId] = {
+      label:      name,
+      swatch:     bg,
+      bg,
+      bgAlt:      darkenHex(bg, 0.12),
+      text,
+      textMuted:  hexToRgba(text, 0.6),
+      accent,
+      accentText: contrastColor(accent),
+      rule:       hexToRgba(text, 0.18),
+    };
+  });
+
+  const cfg = { id, label, themes };
+  const subtitle = $('fld-subtitle').value.trim();
+  if (subtitle) cfg.subtitle = subtitle;
+  const handle = $('fld-handle').value.trim();
+  if (handle) cfg.handle = handle;
+  if (_logo) cfg.logo = _logo;
+  return cfg;
+}
+
+// ── Scale slide to fit preview slot ─────────────────────────────
+function scalePreview() {
+  const wrap  = $('preview-wrap');
+  const inner = $('preview-inner');
+  const w = wrap.offsetWidth;
+  if (!w) return;
+  const scale = w / 540;
+  inner.style.transform = `scale(${scale})`;
+  wrap.style.height = Math.round(540 * scale) + 'px';
+}
+
+// ── Render preview ───────────────────────────────────────────────
+function updatePreview() {
+  const cfg = buildCfg();
+
+  if (!cfg) {
+    $('preview-inner').innerHTML = '<div class="slide cstm square" style="--cbg:#1a1b1e;--ctxt:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:15px">Fill in a brand name to preview</div>';
+    $('json-out').textContent = '';
+    scalePreview();
+    updateThemeDots(null);
+    return;
+  }
+
+  // Register (or overwrite) preview family
+  try { T.registerCustomFamily({ ...cfg, id: PREVIEW_ID }); } catch(e) { console.warn(e); }
+
+  // Keep active theme valid
+  const themeKeys = Object.keys(cfg.themes);
+  if (!themeKeys.includes(_activeTheme)) _activeTheme = themeKeys[0];
+
+  const slide = {
+    family: PREVIEW_ID,
+    layout: _activeLayout,
+    theme:  _activeTheme,
+    format: 'square',
+    handle: cfg.handle || '@yourbrand',
+    pg: '01', pgTot: '05',
+    fields: sampleFields(_activeLayout),
+  };
+
+  $('preview-inner').innerHTML = T.render(slide);
+  scalePreview();
+  updateThemeDots(cfg);
+  updateJSON(cfg);
+}
+
+// ── Theme dots ───────────────────────────────────────────────────
+function updateThemeDots(cfg) {
+  const container = $('theme-dots');
+  if (!cfg) { container.innerHTML = ''; return; }
+  container.innerHTML = Object.entries(cfg.themes).map(([k, th]) => {
+    const active = k === _activeTheme ? ' active' : '';
+    return `<button class="theme-dot${active}" style="background:${escAttr(th.bg)}" data-theme="${escAttr(k)}" title="${escAttr(th.label)}"></button>`;
+  }).join('');
+  container.querySelectorAll('.theme-dot').forEach(btn => {
+    btn.onclick = () => { _activeTheme = btn.dataset.theme; updatePreview(); };
+  });
+}
+
+// ── JSON display ─────────────────────────────────────────────────
+function updateJSON(cfg) {
+  if (!cfg) { $('json-out').textContent = ''; return; }
+  const display = JSON.parse(JSON.stringify(cfg));
+  if (display.logo && display.logo.startsWith('data:')) {
+    const kb = Math.round(display.logo.length * 0.75 / 1024);
+    display.logo = `(base64 image, ~${kb}KB — included in download)`;
+  }
+  $('json-out').textContent = JSON.stringify(display, null, 2);
+}
+
+// ── Layout tabs ──────────────────────────────────────────────────
+const PREVIEW_LAYOUTS = ['cover','stat','tip','list','quote','compare','cta','case','author'];
+const LAYOUT_LABELS   = { cover:'Cover', stat:'Stat', tip:'Tip', list:'List', quote:'Quote', compare:'Compare', cta:'CTA', case:'Case', author:'Author' };
+
+function buildLayoutTabs() {
+  const container = $('layout-tabs');
+  container.innerHTML = PREVIEW_LAYOUTS.map(l =>
+    `<button class="layout-tab${l===_activeLayout?' active':''}" data-layout="${l}">${LAYOUT_LABELS[l]}</button>`
+  ).join('');
+  container.querySelectorAll('.layout-tab').forEach(btn => {
+    btn.onclick = () => {
+      _activeLayout = btn.dataset.layout;
+      container.querySelectorAll('.layout-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.layout === _activeLayout));
+      updatePreview();
+    };
+  });
+}
+
+// ── Theme rows ───────────────────────────────────────────────────
+function addThemeRow(defaults) {
+  const count = document.querySelectorAll('.theme-row').length;
+  const d = defaults || { name: 'Theme ' + (count + 1), bg: '#2c3d50', accent: '#dfb81f', text: '#ffffff' };
+  const row = document.createElement('div');
+  row.className = 'theme-row';
+  row.innerHTML = `
+    <div class="theme-row-header">
+      <input class="theme-name-input" type="text" value="${escAttr(d.name)}" placeholder="Theme name">
+      <button class="btn-del-theme" title="Remove theme">×</button>
+    </div>
+    <div class="colour-rows">
+      <div class="colour-row">
+        <label>Background</label>
+        <div class="colour-swatch-wrap">
+          <input type="color" data-key="bg" value="${escAttr(d.bg)}">
+          <span class="colour-hex">${d.bg}</span>
+        </div>
+      </div>
+      <div class="colour-row">
+        <label>Accent</label>
+        <div class="colour-swatch-wrap">
+          <input type="color" data-key="accent" value="${escAttr(d.accent)}">
+          <span class="colour-hex">${d.accent}</span>
+        </div>
+      </div>
+      <div class="colour-row">
+        <label>Text</label>
+        <div class="colour-swatch-wrap">
+          <input type="color" data-key="text" value="${escAttr(d.text)}">
+          <span class="colour-hex">${d.text}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  row.querySelector('.btn-del-theme').onclick = () => { row.remove(); updatePreview(); };
+  row.querySelector('.theme-name-input').oninput = updatePreview;
+  row.querySelectorAll('input[type="color"]').forEach(inp => {
+    inp.oninput = () => { inp.nextElementSibling.textContent = inp.value; updatePreview(); };
+  });
+  $('theme-rows').appendChild(row);
+}
+
+// ── Logo upload ──────────────────────────────────────────────────
+$('logo-file').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    _logo = ev.target.result;
+    $('logo-thumb').innerHTML = `<img src="${escAttr(_logo)}" alt="">`;
+    $('logo-clear').style.display = '';
+    updatePreview();
+  };
+  reader.readAsDataURL(file);
+};
+$('logo-clear').onclick = () => {
+  _logo = '';
+  $('logo-thumb').innerHTML = '';
+  $('logo-clear').style.display = 'none';
+  $('logo-file').value = '';
+  updatePreview();
+};
+
+// ── Download ─────────────────────────────────────────────────────
+$('btn-download').onclick = () => {
+  const cfg = buildCfg();
+  if (!cfg) { alert('Enter a brand name and at least one colour theme first.'); return; }
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (cfg.id || 'template') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+// ── Copy JSON ────────────────────────────────────────────────────
+$('btn-copy-json').onclick = () => {
+  const cfg = buildCfg();
+  if (!cfg) return;
+  navigator.clipboard.writeText(JSON.stringify(cfg, null, 2))
+    .then(() => {
+      $('btn-copy-json').textContent = 'Copied!';
+      setTimeout(() => $('btn-copy-json').textContent = 'Copy', 1600);
+    })
+    .catch(() => {
+      $('btn-copy-json').textContent = 'Failed';
+      setTimeout(() => $('btn-copy-json').textContent = 'Copy', 1600);
+    });
+};
+
+// ── Wiring ───────────────────────────────────────────────────────
+$('btn-add-theme').onclick = () => { addThemeRow(); updatePreview(); };
+
+['fld-label', 'fld-subtitle', 'fld-handle'].forEach(id =>
+  $(id).addEventListener('input', updatePreview));
+
+// ── Init ─────────────────────────────────────────────────────────
+buildLayoutTabs();
+addThemeRow({ name: 'Dark',  bg: '#1e2235', accent: '#7c5cff', text: '#ffffff' });
+addThemeRow({ name: 'Light', bg: '#ffffff',  accent: '#7c5cff', text: '#1a1a2e' });
+updatePreview();
+window.addEventListener('resize', scalePreview);
+</script>
+</body>
+</html>
