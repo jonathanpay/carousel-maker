@@ -264,6 +264,40 @@ textarea{ min-height: 60px; resize: vertical; line-height: 1.5; }
 .btn-danger{ background: transparent; color: var(--ui-danger); border: 1px solid #6a2525; }
 .btn-danger:hover{ background: rgba(224,85,85,0.1); }
 .btn-icon{ padding: 7px 10px; }
+.btn-sm{ padding: 5px 10px; font-size: 11px; }
+
+/* ── Draft restore banner ────────────────────────────────────────── */
+#draft-banner{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #1e2a1a;
+  border-bottom: 1px solid #3a5a30;
+  color: #a8e09a;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 16px;
+  z-index: 300;
+}
+body.has-banner #sidebar,
+body.has-banner #main { padding-top: 37px; }
+#draft-banner .draft-actions{ display: flex; align-items: center; gap: 8px; }
+#draft-banner .btn-ghost{ border-color: #3a5a30; color: #a8e09a; font-size: 11px; padding: 4px 10px; }
+#draft-banner .btn-ghost:hover{ background: rgba(168,224,154,0.1); }
+.draft-dismiss{
+  background: none; border: none; color: #6a8a60;
+  font-size: 16px; cursor: pointer; line-height: 1; padding: 0 4px;
+}
+.draft-dismiss:hover{ color: #a8e09a; }
+
+/* ── Toolbar separator ───────────────────────────────────────────── */
+.toolbar-sep{
+  width: 1px; height: 18px;
+  background: var(--ui-border);
+  flex-shrink: 0;
+}
 
 /* ── Main ───────────────────────────────────────────────────────── */
 #main{
@@ -699,3 +733,20 @@ textarea{ min-height: 60px; resize: vertical; line-height: 1.5; }
 .import-error{ font-size: 12px; color: #e05555; min-height: 16px; }
 .import-actions{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .import-actions .btn{ white-space: nowrap; }
+
+/* ── Load Carousel Modal (reuses import-dialog styles) ────────── */
+#load-modal{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 200; display: none;
+  align-items: center; justify-content: center;
+}
+#load-modal.open{ display: flex; }
+#load-json{
+  width: 100%; height: 120px;
+  background: var(--ui-bg); border: 1px solid var(--ui-border);
+  border-radius: 6px; color: var(--ui-text);
+  font-family: 'JetBrains Mono','Fira Code',monospace; font-size: 11px;
+  padding: 12px; resize: vertical; line-height: 1.5;
+}
+#load-json:focus{ outline: none; border-color: var(--ui-accent); }

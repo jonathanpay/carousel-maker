@@ -11,6 +11,17 @@
 <body>
 
 <!-- ─────────────────────────────────────────────────────────
+     DRAFT RESTORE BANNER
+     ───────────────────────────────────────────────────────── -->
+<div id="draft-banner" style="display:none">
+  <span>You have unsaved work — <span id="draft-time"></span></span>
+  <div class="draft-actions">
+    <button class="btn btn-ghost btn-sm" onclick="restoreDraft()">Restore draft</button>
+    <button class="draft-dismiss" onclick="dismissDraft()">×</button>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
      SIDEBAR
      ───────────────────────────────────────────────────────── -->
 <aside id="sidebar">
@@ -78,6 +89,12 @@
       <button class="btn btn-ghost" id="btn-browse">⊞ Browse templates</button>
       <button class="btn btn-ghost" id="btn-tweaks">⚙ Tweaks</button>
       <button class="btn btn-ghost" id="btn-duplicate">⎘ Duplicate</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn btn-ghost" id="btn-save-carousel" title="Save carousel to file">↓ Save</button>
+      <button class="btn btn-ghost" id="btn-load-carousel" title="Load carousel from file">↑ Load</button>
+      <button class="btn btn-ghost" id="btn-share-carousel" title="Copy shareable link">🔗 Share</button>
+      <button class="btn btn-ghost" id="btn-new-carousel" title="Start a new carousel">◻ New</button>
+      <div class="toolbar-sep"></div>
       <button class="btn btn-ghost" id="btn-export">↓ PNG</button>
       <button class="btn btn-primary" id="btn-export-all">↓ Export all</button>
     </div>
@@ -172,6 +189,30 @@
         <input type="file" id="import-file" accept=".json,application/json" style="display:none">
         <button class="btn btn-ghost" id="btn-sample">↓ Download sample</button>
         <button class="btn btn-primary" id="btn-import-do">Import template</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────
+     LOAD CAROUSEL MODAL
+     ───────────────────────────────────────────────────────── -->
+<div id="load-modal">
+  <div class="import-dialog">
+    <div class="import-header">
+      <h2>Load Carousel</h2>
+      <button id="close-load">×</button>
+    </div>
+    <div class="import-tab-body">
+      <p class="import-intro">Upload a <code>.json</code> carousel file, or paste the JSON below.</p>
+      <div class="import-actions" style="margin-bottom:8px">
+        <label class="btn btn-ghost" for="load-file">↑ Upload .json</label>
+        <input type="file" id="load-file" accept=".json,application/json" style="display:none">
+      </div>
+      <textarea id="load-json" placeholder='{"version":1,"slides":[...]}'></textarea>
+      <p id="load-error" class="import-error"></p>
+      <div class="import-actions">
+        <button class="btn btn-primary" id="btn-load-do">Load carousel</button>
       </div>
     </div>
   </div>

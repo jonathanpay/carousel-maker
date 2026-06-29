@@ -72,6 +72,7 @@ const LAYOUT_ICONS = {
 // ── Init ───────────────────────────────────────────────────────────
 function init(){
   loadCustomTemplates(); // must be before buildFamilyPicker
+  checkUrlOrDraft();     // restore shared/draft carousel before first render
   buildFamilyPicker();
   buildLayoutPicker();
   buildIconGrid();
@@ -365,6 +366,7 @@ function renderCanvas(){
   const slideEl = wrap.querySelector('.slide');
   if (slideEl) updateCanvasSize();
   updateSlideInfo();
+  debouncePersistDraft();
 }
 
 function applyRenderTweaks(slide){
@@ -851,6 +853,170 @@ function exportCustomTemplate(id){
   URL.revokeObjectURL(a.href);
 }
 
+// ── Project: save / load / share / draft ─────────────────────────
+const DRAFT_KEY = 'carouselMaker_draft';
+
+let _draftTimer;
+function debouncePersistDraft(){
+  clearTimeout(_draftTimer);
+  _draftTimer = setTimeout(persistDraft, 700);
+}
+
+function persistDraft(){
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      version: 1, savedAt: Date.now(),
+      format: state.format, tweaks: state.tweaks,
+      slides: state.slides, currentIdx: state.currentIdx,
+    }));
+  } catch(e){}
+}
+
+function relTime(ts){
+  const d = Date.now() - ts;
+  if (d < 90000)   return 'just now';
+  if (d < 3600000) return Math.round(d/60000) + 'm ago';
+  if (d < 86400000)return Math.round(d/3600000) + 'h ago';
+  return Math.round(d/86400000) + 'd ago';
+}
+
+function checkUrlOrDraft(){
+  if (location.hash.startsWith('#c=')){
+    try {
+      const data = JSON.parse(_fromBase64(location.hash.slice(3)));
+      history.replaceState(null, '', location.pathname + location.search);
+      _applyCarouselData(data, true);
+      // banner not needed — URL load is intentional
+    } catch(e){ console.warn('URL decode failed:', e); }
+    return;
+  }
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft.slides || !draft.slides.length) return;
+    const banner = $('#draft-banner');
+    if (banner){
+      $('#draft-time').textContent = draft.savedAt ? relTime(draft.savedAt) : '';
+      banner.style.display = 'flex';
+      document.body.classList.add('has-banner');
+      window._pendingDraft = draft;
+    }
+  } catch(e){}
+}
+
+window.dismissDraft = function(){
+  $('#draft-banner').style.display = 'none';
+  document.body.classList.remove('has-banner');
+  localStorage.removeItem(DRAFT_KEY);
+};
+
+window.restoreDraft = function(){
+  if (!window._pendingDraft) return;
+  _applyCarouselData(window._pendingDraft);
+  buildFamilyPicker();
+  $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === state.format));
+  applyTweaks();
+  reflectSidebar();
+  renderTray();
+  renderCanvas();
+  $('#draft-banner').style.display = 'none';
+  document.body.classList.remove('has-banner');
+  toast('Draft restored');
+};
+
+function _applyCarouselData(data, quiet){
+  if (!data || !data.slides || !data.slides.length) return;
+  if (data.customTemplates){
+    data.customTemplates.forEach(cfg => {
+      if (!T.FAMILIES[cfg.id]) try { T.registerCustomFamily(cfg); } catch(e){}
+    });
+    saveCustomTemplates();
+  }
+  state.slides = data.slides;
+  state.format = data.format || 'square';
+  state.currentIdx = Math.min(data.currentIdx || 0, data.slides.length - 1);
+  if (data.tweaks) state.tweaks = { ...TWEAKS_DEFAULTS, ...data.tweaks };
+}
+
+function saveCarousel(){
+  const usedCustom = T.getCustomFamilies()
+    .filter(cfg => state.slides.some(s => s.family === cfg.id));
+  const data = {
+    version: 1, format: state.format,
+    tweaks: state.tweaks, slides: state.slides,
+    ...(usedCustom.length ? { customTemplates: usedCustom } : {}),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'carousel.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Carousel saved');
+}
+
+function _toBase64(str){
+  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p) => String.fromCharCode(parseInt(p, 16))));
+}
+function _fromBase64(str){
+  return decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join(''));
+}
+
+function shareCarousel(){
+  const usedCustom = T.getCustomFamilies()
+    .filter(cfg => state.slides.some(s => s.family === cfg.id))
+    .map(cfg => ({ ...cfg, logo: '' })); // strip logos to keep URL short
+  const data = {
+    version: 1, format: state.format, tweaks: state.tweaks, slides: state.slides,
+    ...(usedCustom.length ? { customTemplates: usedCustom } : {}),
+  };
+  const encoded = _toBase64(JSON.stringify(data));
+  if (encoded.length > 20000){
+    toast('Carousel too large for a link — use ↓ Save instead');
+    return;
+  }
+  const url = location.origin + location.pathname + '#c=' + encoded;
+  navigator.clipboard.writeText(url)
+    .then(() => toast('Share link copied to clipboard'))
+    .catch(() => prompt('Copy this link:', url));
+}
+
+// ── Load carousel modal ───────────────────────────────────────────
+function openLoadModal(){
+  $('#load-modal').classList.add('open');
+  $('#load-json').value = '';
+  $('#load-error').textContent = '';
+}
+
+function closeLoadModal(){
+  $('#load-modal').classList.remove('open');
+}
+
+function doLoadCarousel(){
+  const raw = $('#load-json').value.trim();
+  if (!raw){ $('#load-error').textContent = 'Paste carousel JSON or upload a file.'; return; }
+  let data;
+  try { data = JSON.parse(raw); } catch(e){
+    $('#load-error').textContent = 'Invalid JSON — check for missing quotes or commas.';
+    return;
+  }
+  if (!data.slides || !data.slides.length){
+    $('#load-error').textContent = 'No slides found. Is this a carousel file?';
+    return;
+  }
+  _applyCarouselData(data);
+  buildFamilyPicker();
+  $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === state.format));
+  applyTweaks();
+  reflectSidebar();
+  renderTray();
+  renderCanvas();
+  closeLoadModal();
+  persistDraft();
+  toast('Carousel loaded — ' + data.slides.length + ' slides');
+}
+
 // ── Wire toolbar buttons ──────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   init();
@@ -917,6 +1083,39 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#import-modal').addEventListener('click', e => {
     if (e.target === $('#import-modal')) closeImportModal();
   });
+
+  // Project: save / load / share
+  $('#btn-save-carousel').onclick  = saveCarousel;
+  $('#btn-share-carousel').onclick = shareCarousel;
+  $('#btn-load-carousel').onclick  = openLoadModal;
+  $('#close-load').onclick         = closeLoadModal;
+  $('#btn-load-do').onclick        = doLoadCarousel;
+  $('#load-file').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { $('#load-json').value = ev.target.result; $('#load-error').textContent = ''; };
+    reader.readAsText(file);
+  };
+  $('#load-modal').addEventListener('click', e => {
+    if (e.target === $('#load-modal')) closeLoadModal();
+  });
+  $('#btn-new-carousel').onclick = () => {
+    if (!confirm('Start a new carousel? Your current work will be replaced.')) return;
+    state.slides = [defaultsFor('jp-editorial','cover',1)];
+    state.slides[0].pgTot = '01';
+    state.currentIdx = 0;
+    state.format = 'square';
+    state.tweaks = { ...TWEAKS_DEFAULTS };
+    $$('.format-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fmt === 'square'));
+    buildTweaksPanel();
+    applyTweaks();
+    reflectSidebar();
+    renderTray();
+    renderCanvas();
+    persistDraft();
+    toast('New carousel started');
+  };
 
   // Format toggle
   $$('.format-toggle button').forEach(b => {
