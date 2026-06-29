@@ -640,6 +640,26 @@ function loadCustomTemplates(){
   } catch(e) {}
 }
 
+// ── Colour utilities ──────────────────────────────────────────────
+const escAttr = s => String(s ?? '').replace(/[&"<>]/g, c => ({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'})[c]);
+
+function hexToRgb(hex) {
+  const h = hex.replace('#','');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+function hexToRgba(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function darkenHex(hex, amount) {
+  let { r, g, b } = hexToRgb(hex);
+  return '#' + [r,g,b].map(x => Math.max(0, Math.round(x*(1-amount))).toString(16).padStart(2,'0')).join('');
+}
+function contrastColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.299*r + 0.587*g + 0.114*b) > 140 ? '#000000' : '#ffffff';
+}
+
 // ── Custom template management ────────────────────────────────────
 window.deleteCustomTemplate = function(id){
   if (!confirm('Remove this template from your library?')) return;
@@ -652,10 +672,102 @@ window.deleteCustomTemplate = function(id){
   toast('Template removed');
 };
 
+// ── Build form ────────────────────────────────────────────────────
+let _buildLogo = '';
+
+function switchImportTab(tab) {
+  $$('.import-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  $('#tab-build').style.display = tab === 'build' ? '' : 'none';
+  $('#tab-json').style.display  = tab === 'json'  ? '' : 'none';
+}
+
+function initBuildForm() {
+  _buildLogo = '';
+  $('#build-logo-preview').innerHTML = '';
+  $('#build-logo-clear').style.display = 'none';
+  $('#build-label').value    = '';
+  $('#build-subtitle').value = '';
+  $('#build-handle').value   = '';
+  $('#build-error').textContent = '';
+  $('#build-themes').innerHTML = '';
+  addBuildTheme({ name: 'Dark',  bg: '#1e2235', accent: '#7c5cff', text: '#ffffff' });
+  addBuildTheme({ name: 'Light', bg: '#ffffff',  accent: '#7c5cff', text: '#1a1a2e' });
+}
+
+function addBuildTheme(defaults) {
+  const idx = $('#build-themes').querySelectorAll('.build-theme-row').length;
+  const d = defaults || { name: 'Theme ' + (idx+1), bg: '#2c3d50', accent: '#dfb81f', text: '#ffffff' };
+  const row = document.createElement('div');
+  row.className = 'build-theme-row';
+  row.dataset.themeIdx = idx;
+  row.innerHTML = `
+    <div class="theme-row-header">
+      <input class="build-theme-name" type="text" value="${escAttr(d.name)}" placeholder="Theme name">
+      <button class="theme-row-del" title="Remove">×</button>
+    </div>
+    <div class="theme-colours">
+      <div class="colour-row"><label>Background</label><div class="colour-input-wrap"><input type="color" data-key="bg" value="${d.bg}"><span class="colour-hex">${d.bg}</span></div></div>
+      <div class="colour-row"><label>Accent</label><div class="colour-input-wrap"><input type="color" data-key="accent" value="${d.accent}"><span class="colour-hex">${d.accent}</span></div></div>
+      <div class="colour-row"><label>Text</label><div class="colour-input-wrap"><input type="color" data-key="text" value="${d.text}"><span class="colour-hex">${d.text}</span></div></div>
+    </div>
+  `;
+  row.querySelector('.theme-row-del').onclick = () => {
+    row.remove();
+    $$('.build-theme-row').forEach((r,i) => r.dataset.themeIdx = i);
+  };
+  row.querySelectorAll('input[type="color"]').forEach(inp => {
+    inp.oninput = () => inp.nextElementSibling.textContent = inp.value;
+  });
+  $('#build-themes').appendChild(row);
+}
+
+function buildTemplateFromForm() {
+  const label = $('#build-label').value.trim();
+  if (!label) { $('#build-error').textContent = 'Enter a brand name.'; return null; }
+  const themeRows = [...$$('.build-theme-row')];
+  if (!themeRows.length) { $('#build-error').textContent = 'Add at least one colour theme.'; return null; }
+
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'custom';
+  const themes = {};
+  themeRows.forEach(row => {
+    const name    = row.querySelector('.build-theme-name').value.trim() || 'Theme';
+    const bg      = row.querySelector('[data-key="bg"]').value;
+    const accent  = row.querySelector('[data-key="accent"]').value;
+    const text    = row.querySelector('[data-key="text"]').value;
+    const themeId = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'theme';
+    themes[themeId] = {
+      label: name, swatch: bg, bg,
+      bgAlt:      darkenHex(bg, 0.12),
+      text,
+      textMuted:  hexToRgba(text, 0.6),
+      accent,
+      accentText: contrastColor(accent),
+      rule:       hexToRgba(text, 0.18),
+    };
+  });
+
+  return {
+    id,
+    label,
+    subtitle: $('#build-subtitle').value.trim() || 'Custom template',
+    handle:   $('#build-handle').value.trim(),
+    logo:     _buildLogo,
+    themes,
+  };
+}
+
+window.clearBuildLogo = function() {
+  _buildLogo = '';
+  $('#build-logo-preview').innerHTML = '';
+  $('#build-logo-clear').style.display = 'none';
+};
+
 function openImportModal(){
   $('#import-modal').classList.add('open');
   $('#import-json').value = '';
   $('#import-error').textContent = '';
+  initBuildForm();
+  switchImportTab('build');
 }
 
 function closeImportModal(){
@@ -759,7 +871,38 @@ window.addEventListener('DOMContentLoaded', () => {
     try { window.parent.postMessage({type:'__edit_mode_dismissed'}, '*'); } catch(e){}
   };
 
-  // Import modal
+  // Import modal — tabs
+  $$('.import-tab').forEach(t => t.onclick = () => switchImportTab(t.dataset.tab));
+
+  // Build tab
+  $('#btn-add-theme').onclick = () => addBuildTheme();
+  $('#btn-build-import').onclick = () => {
+    $('#build-error').textContent = '';
+    const cfg = buildTemplateFromForm();
+    if (!cfg) return;
+    try {
+      const id = T.registerCustomFamily(cfg);
+      saveCustomTemplates();
+      buildFamilyPicker();
+      closeImportModal();
+      setFamily(id);
+      toast(`"${cfg.label}" added to your library`);
+    } catch(e) { $('#build-error').textContent = e.message; }
+  };
+  $('#build-logo-file').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      _buildLogo = ev.target.result;
+      $('#build-logo-preview').innerHTML = `<img src="${_buildLogo}" alt="logo">`;
+      $('#build-logo-clear').style.display = '';
+    };
+    reader.readAsDataURL(file);
+  };
+  $('#build-logo-clear').onclick = clearBuildLogo;
+
+  // JSON tab
   $('#close-import').onclick = closeImportModal;
   $('#btn-import-do').onclick = doImportTemplate;
   $('#btn-sample').onclick = downloadSampleTemplate;
@@ -770,6 +913,7 @@ window.addEventListener('DOMContentLoaded', () => {
     reader.onload = ev => { $('#import-json').value = ev.target.result; $('#import-error').textContent = ''; };
     reader.readAsText(file);
   };
+
   $('#import-modal').addEventListener('click', e => {
     if (e.target === $('#import-modal')) closeImportModal();
   });

@@ -24,7 +24,7 @@ const accBR = (s, color) => {
     .replace(/\*(.+?)\*/g, `<em${style}>$1</em>`)
     .replace(/\n/g, '<br>');
 };
-const iconSrc = key => (!key || key === 'none') ? null : window.__resolveAsset('assets/icons/' + key);
+const iconSrc = key => (!key || key === 'none') ? null : 'assets/icons/' + key;
 const fmtSlide = (slide) => slide.format === 'portrait' ? 'portrait' : '';
 
 // ── Families ───────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ JPE.cover = (s, t, f) => {
   return `<div class="slide jpe jpe-cover ${t} ${f}">
     <div class="top">
       <div class="jpe-eyebrow">${esc(fields.eyebrow)}</div>
-      <img src="${window.__resolveAsset('assets/logos/jp-full.png')}" class="jpe-logo" alt="JP">
+      <img src="assets/logos/jp-full.png" class="jpe-logo" alt="JP">
     </div>
     <div style="display:flex;flex-direction:column;gap:18px">
       <div class="jpe-rule"></div>
@@ -526,7 +526,7 @@ HEC.cover = (s, t, f) => {
   return `<div class="slide hec hec-cover ${t} ${f}">
     <div class="top">
       <div class="hec-pill solid">${esc(fields.eyebrow || 'HEA')}</div>
-      <img src="${window.__resolveAsset('assets/logos/hea-mark.png')}" class="hec-logo" alt="HEA" style="height:36px">
+      <img src="assets/logos/hea-mark.png" class="hec-logo" alt="HEA" style="height:36px">
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <h1 class="hec-h1">${acc(fields.headline)}</h1>
@@ -880,6 +880,244 @@ HES.cta = (s, t, f) => {
   </div>`;
 };
 
+// ── Custom template registry ───────────────────────────────────────
+const _customFamilies = new Map();
+
+function cstmVars(cfg, themeKey) {
+  const th = (cfg.themes || {})[themeKey] || Object.values(cfg.themes || {})[0] || {};
+  const font = cfg.fonts || {};
+  return [
+    `--cbg:${th.bg         || '#1a1a1a'}`,
+    `--cbg2:${th.bgAlt     || th.bg     || '#111'}`,
+    `--ctxt:${th.text      || '#ffffff'}`,
+    `--ctxt2:${th.textMuted|| 'rgba(255,255,255,0.6)'}`,
+    `--cacc:${th.accent    || '#dfb81f'}`,
+    `--catxt:${th.accentText|| '#000000'}`,
+    `--cbrd:${th.rule      || 'rgba(255,255,255,0.2)'}`,
+    `--cfont-h:${font.headingFamily || "'Inter','Helvetica Neue',sans-serif"}`,
+    `--cfont-b:${font.bodyFamily    || "'Inter','Helvetica Neue',sans-serif"}`,
+  ].join(';');
+}
+
+function cstmLogo(cfg) {
+  if (!cfg.logo) return '';
+  const s = esc(cfg.logoStyle || 'height:40px;max-width:150px;object-fit:contain');
+  return `<img src="${esc(cfg.logo)}" alt="" class="cstm-logo" style="${s}">`;
+}
+
+function cstmFooter(s) {
+  return `<div class="cstm-footer"><span>${esc(s.handle)}</span><span>${esc(s.pg)} / ${esc(s.pgTot)}</span></div>`;
+}
+
+// ── Generic renderer — 10 layouts ─────────────────────────────────
+const CSTM = {};
+
+CSTM.cover = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-cover ${f}" style="${v}">
+    <div class="cstm-top">
+      <div class="cstm-eyebrow">${esc(fl.eyebrow)}</div>
+      ${cstmLogo(cfg)}
+    </div>
+    <div class="cstm-grow">
+      <div class="cstm-rule"></div>
+      <h1 class="cstm-h1">${acc(fl.headline, 'var(--cacc)')}</h1>
+      ${fl.sub ? `<p class="cstm-sub">${lineBreak(fl.sub)}</p>` : ''}
+    </div>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.stat = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-stat ${f}" style="${v}">
+    <div class="cstm-rule"></div>
+    <div class="cstm-bignum">${esc(fl.number)}</div>
+    <div class="cstm-stat-label">${acc(fl.label, 'var(--cacc)')}</div>
+    ${fl.body ? `<p class="cstm-body cstm-grow">${lineBreak(fl.body)}</p>` : '<div class="cstm-grow"></div>'}
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.tip = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-tip ${f}" style="${v}" data-step="${esc(fl.step)}">
+    <div class="cstm-kicker">${esc(fl.kicker)}</div>
+    <h2 class="cstm-h2 cstm-grow">${acc(fl.headline, 'var(--cacc)')}</h2>
+    ${fl.body ? `<p class="cstm-body">${lineBreak(fl.body)}</p>` : ''}
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.list = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  const items = [fl.item1, fl.item2, fl.item3, fl.item4, fl.item5, fl.item6]
+    .filter(Boolean)
+    .map(i => `<li class="cstm-item">${esc(i)}</li>`).join('');
+  return `<div class="slide cstm cstm-list ${f}" style="${v}">
+    <h2 class="cstm-h2">${acc(fl.headline, 'var(--cacc)')}</h2>
+    ${fl.sub ? `<p class="cstm-list-sub">${esc(fl.sub)}</p>` : ''}
+    <div class="cstm-rule"></div>
+    <ul class="cstm-items cstm-grow">${items}</ul>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.quote = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-quote ${f}" style="${v}">
+    <div class="cstm-qdeco">"</div>
+    <blockquote class="cstm-blockquote cstm-grow">${accBR(fl.quote, 'var(--cacc)')}</blockquote>
+    <p class="cstm-attr">${esc(fl.attr)}</p>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.compare = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-compare ${f}" style="${v}">
+    <h2 class="cstm-h2">${acc(fl.headline, 'var(--cacc)')}</h2>
+    <div class="cstm-compare-grid cstm-grow">
+      <div class="cstm-dont">
+        <div class="cstm-col-head cstm-dont-head"><span class="cstm-x">✗</span> ${esc(fl.dontTitle || "Don't")}</div>
+        <p>${lineBreak(fl.dontBody)}</p>
+      </div>
+      <div class="cstm-do">
+        <div class="cstm-col-head cstm-do-head"><span>✓</span> ${esc(fl.doTitle || 'Do')}</div>
+        <p>${lineBreak(fl.doBody)}</p>
+      </div>
+    </div>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.case = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-case ${f}" style="${v}">
+    <h2 class="cstm-h2">${acc(fl.headline, 'var(--cacc)')}</h2>
+    <div class="cstm-rule"></div>
+    <div class="cstm-case-rows cstm-grow">
+      <div class="cstm-case-row"><span class="cstm-arrow">→</span><p>${lineBreak(fl.p1)}</p></div>
+      <div class="cstm-case-row"><span class="cstm-arrow">→</span><p>${lineBreak(fl.p2)}</p></div>
+      <div class="cstm-case-row"><span class="cstm-arrow">→</span><p>${lineBreak(fl.p3)}</p></div>
+    </div>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.image = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-image ${f}" style="${v}">
+    <div class="cstm-photo">${photoBlock(fl.photoUrl, 'PHOTO')}</div>
+    <div class="cstm-eyebrow">${esc(fl.eyebrow)}</div>
+    <h2 class="cstm-h2">${acc(fl.headline, 'var(--cacc)')}</h2>
+    ${fl.body ? `<p class="cstm-body cstm-grow">${lineBreak(fl.body)}</p>` : '<div class="cstm-grow"></div>'}
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.author = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-author ${f}" style="${v}">
+    <div class="cstm-role">${esc(fl.role)}</div>
+    <div class="cstm-author-bio cstm-grow">
+      ${fl.photoUrl ? `<div class="cstm-av"><img src="${esc(fl.photoUrl)}" alt=""></div>` : ''}
+      <div class="cstm-author-text">
+        <div class="cstm-name">${esc(fl.name)}</div>
+        <p class="cstm-body">${lineBreak(fl.bio)}</p>
+        ${fl.handles ? `<div class="cstm-handles">${esc(fl.handles)}</div>` : ''}
+      </div>
+    </div>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+CSTM.cta = (s, t, f, cfg) => {
+  const fl = s.fields || {};
+  const v  = cstmVars(cfg, s.theme);
+  return `<div class="slide cstm cstm-cta ${f}" style="${v}">
+    <div class="cstm-grow cstm-cta-inner">
+      <p class="cstm-pre">${esc(fl.pre)}</p>
+      <h1 class="cstm-h1">${acc(fl.headline, 'var(--cacc)')}</h1>
+      ${fl.sub ? `<p class="cstm-sub">${lineBreak(fl.sub)}</p>` : ''}
+      <div class="cstm-pill">${esc(fl.pill || 'Follow →')}</div>
+    </div>
+    ${cstmFooter(s)}
+  </div>`;
+};
+
+// ── Custom family registration ─────────────────────────────────────
+function registerCustomFamily(cfg) {
+  if (!cfg || !cfg.id || !cfg.label || !cfg.themes) {
+    throw new Error('Template must have id, label, and themes');
+  }
+  const id = String(cfg.id).replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  cfg = { ...cfg, id };
+
+  // Load Google Fonts if specified
+  if (cfg.fonts && cfg.fonts.googleFonts && typeof document !== 'undefined') {
+    if (!document.head.querySelector(`link[data-cstm-font="${id}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + cfg.fonts.googleFonts;
+      link.dataset.cstmFont = id;
+      document.head.appendChild(link);
+    }
+  }
+
+  // Build renderer closures (each captures cfg)
+  const renderer = {};
+  LAYOUTS.forEach(layout => {
+    renderer[layout] = (s, t, f) => CSTM[layout](s, t, f, cfg);
+  });
+  RENDERERS[id] = renderer;
+
+  FAMILIES[id] = {
+    brand: 'custom',
+    label: cfg.label,
+    subtitle: cfg.subtitle || 'Custom template',
+    _custom: true,
+    _handle: cfg.handle || '',
+  };
+
+  THEMES[id] = {};
+  Object.entries(cfg.themes).forEach(([themeKey, th]) => {
+    THEMES[id][themeKey] = {
+      label: th.label || themeKey,
+      swatch: th.swatch || th.bg || '#888',
+      cls: {},
+    };
+  });
+
+  _customFamilies.set(id, cfg);
+  return id;
+}
+
+function removeCustomFamily(id) {
+  if (!_customFamilies.has(id)) return;
+  delete RENDERERS[id];
+  delete FAMILIES[id];
+  delete THEMES[id];
+  if (typeof document !== 'undefined') {
+    const link = document.head.querySelector(`link[data-cstm-font="${id}"]`);
+    if (link) link.remove();
+  }
+  _customFamilies.delete(id);
+}
+
+function getCustomFamilies() {
+  return Array.from(_customFamilies.values());
+}
+
 // ── Dispatch ───────────────────────────────────────────────────────
 const RENDERERS = {
   'jp-editorial': JPE,
@@ -891,7 +1129,7 @@ const RENDERERS = {
 function render(slide){
   const family = slide.family || 'jp-editorial';
   const layout = slide.layout || 'cover';
-  const theme  = slide.theme || Object.keys(THEMES[family])[0];
+  const theme  = slide.theme || Object.keys(THEMES[family] || THEMES['jp-editorial'])[0];
   const tCls   = themeCls(family, theme, layout);
   const fCls   = fmtSlide(slide);
   const r = RENDERERS[family]?.[layout];
@@ -903,6 +1141,9 @@ function render(slide){
 window.CarouselTemplates = {
   FAMILIES, LAYOUTS, LAYOUT_LABELS, FIELDS, THEMES, ICONS,
   render,
+  registerCustomFamily,
+  removeCustomFamily,
+  getCustomFamilies,
 };
 
 })();

@@ -121,8 +121,50 @@
       <h2>Import Template</h2>
       <button id="close-import">×</button>
     </div>
-    <div class="import-body">
-      <p class="import-intro">Paste a template JSON below, or upload a <code>.json</code> file. The template will be saved to this browser and appear in the Template Family picker.</p>
+    <div class="import-tabs">
+      <button class="import-tab active" data-tab="build">🎨 Build</button>
+      <button class="import-tab" data-tab="json">{ } JSON</button>
+    </div>
+
+    <!-- Build tab -->
+    <div class="import-tab-body" id="tab-build">
+      <div class="build-grid">
+        <div class="build-field">
+          <label>Brand name</label>
+          <input id="build-label" type="text" placeholder="My Brand — Dark">
+        </div>
+        <div class="build-field">
+          <label>Subtitle <span class="build-opt">optional</span></label>
+          <input id="build-subtitle" type="text" placeholder="Bold and minimal">
+        </div>
+        <div class="build-field">
+          <label>Handle <span class="build-opt">optional</span></label>
+          <input id="build-handle" type="text" placeholder="@mybrand">
+        </div>
+        <div class="build-field">
+          <label>Logo <span class="build-opt">optional</span></label>
+          <div class="logo-row">
+            <label class="btn btn-ghost btn-sm" for="build-logo-file">↑ Upload</label>
+            <input type="file" id="build-logo-file" accept="image/*" style="display:none">
+            <div id="build-logo-preview"></div>
+            <button id="build-logo-clear" style="display:none">✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="build-section-header">
+        <span>Colour themes</span>
+        <button id="btn-add-theme">+ Add theme</button>
+      </div>
+      <div id="build-themes"></div>
+      <p id="build-error" class="import-error"></p>
+      <div class="import-actions">
+        <button class="btn btn-primary" id="btn-build-import">Import template</button>
+      </div>
+    </div>
+
+    <!-- JSON tab -->
+    <div class="import-tab-body" id="tab-json" style="display:none">
+      <p class="import-intro">Paste a template JSON below, or upload a <code>.json</code> file. Saved to this browser.</p>
       <textarea id="import-json" placeholder='{"id":"my-brand","label":"My Brand — Clean","subtitle":"Custom colours","handle":"@mybrand","themes":{"primary":{"label":"Primary","swatch":"#2c3d50","bg":"#2c3d50","bgAlt":"#1e2d3d","text":"#ffffff","textMuted":"rgba(255,255,255,0.65)","accent":"#dfb81f","accentText":"#000000","rule":"rgba(255,255,255,0.2)"}}}'></textarea>
       <p id="import-error" class="import-error"></p>
       <div class="import-actions">
